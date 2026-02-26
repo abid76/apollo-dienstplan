@@ -44,28 +44,30 @@ class RuleRepository
         return $row ?: null;
     }
 
-    public function create(int $shiftId, int $roleId, int $requiredCount): void
+    public function create(int $shiftId, int $roleId, int $requiredCount, bool $requiredCountExact = false): void
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO rule (shift_id, role_id, required_count) VALUES (:shift_id, :role_id, :required_count)'
+            'INSERT INTO rule (shift_id, role_id, required_count, required_count_exact) VALUES (:shift_id, :role_id, :required_count, :required_count_exact)'
         );
         $stmt->execute([
             'shift_id' => $shiftId,
             'role_id' => $roleId,
             'required_count' => $requiredCount,
+            'required_count_exact' => $requiredCountExact ? 1 : 0,
         ]);
     }
 
-    public function update(int $id, int $shiftId, int $roleId, int $requiredCount): void
+    public function update(int $id, int $shiftId, int $roleId, int $requiredCount, bool $requiredCountExact = false): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE rule SET shift_id = :shift_id, role_id = :role_id, required_count = :required_count WHERE id = :id'
+            'UPDATE rule SET shift_id = :shift_id, role_id = :role_id, required_count = :required_count, required_count_exact = :required_count_exact WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
             'shift_id' => $shiftId,
             'role_id' => $roleId,
             'required_count' => $requiredCount,
+            'required_count_exact' => $requiredCountExact ? 1 : 0,
         ]);
     }
 

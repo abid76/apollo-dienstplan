@@ -19,6 +19,7 @@ $id = $rule['id'] ?? null;
 $shiftId = isset($rule['shift_id']) ? (int)$rule['shift_id'] : null;
 $roleId = isset($rule['role_id']) ? (int)$rule['role_id'] : null;
 $requiredCount = $rule['required_count'] ?? 1;
+$requiredCountExact = !empty($rule['required_count_exact']);
 ?>
 
 <h1><?php echo $id ? 'Regel bearbeiten' : 'Neue Regel anlegen'; ?></h1>
@@ -75,6 +76,13 @@ $requiredCount = $rule['required_count'] ?? 1;
     <div>
         <label for="required_count">Anzahl</label><br>
         <input type="number" min="1" id="required_count" name="required_count" value="<?php echo htmlspecialchars((string)$requiredCount, ENT_QUOTES, 'UTF-8'); ?>">
+    </div>
+
+    <div>
+        <label>
+            <input type="checkbox" name="required_count_exact" value="1" <?php echo $requiredCountExact ? 'checked' : ''; ?>>
+            Genauer Wert (wenn nicht angehakt: Mindestwert)
+        </label>
     </div>
 
     <div style="margin-top: 10px;">

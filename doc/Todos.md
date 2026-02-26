@@ -1,0 +1,2 @@
+- Bei Anzahl einer Regel Checkbox exakt (sonst minimum)
+- 

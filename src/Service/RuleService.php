@@ -53,7 +53,8 @@ class RuleService
         $this->rules->create(
             (int)$data['shift_id'],
             (int)$data['role_id'],
-            (int)$data['required_count']
+            (int)$data['required_count'],
+            !empty($data['required_count_exact'])
         );
 
         return [];
@@ -70,7 +71,8 @@ class RuleService
             $id,
             (int)$data['shift_id'],
             (int)$data['role_id'],
-            (int)$data['required_count']
+            (int)$data['required_count'],
+            !empty($data['required_count_exact'])
         );
 
         return [];

@@ -61,13 +61,9 @@ class PlanService
                     foreach ($employees as $employee) {
                         $employeeId = (int)$employee['id'];
 
-                        if (!in_array($weekday, $employee['allowed_weekdays'], true)) {
-                            continue;
-                        }
-                        if (!in_array((int)$shift['id'], $employee['allowed_shifts'], true)) {
-                            continue;
-                        }
-                        if (!in_array($roleId, $employee['roles'], true)) {
+                        if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
+                            !in_array((int)$shift['id'], $employee['allowed_shifts'], true) ||
+                            !in_array($roleId, $employee['roles'], true)) {
                             continue;
                         }
 
@@ -139,6 +135,15 @@ class PlanService
                 $shifts = $employee['allowed_shifts'];
                 $shiftId = $shifts[array_rand($shifts)];
 
+                if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
+                    !in_array($shiftId, $employee['allowed_shifts'], true) ||
+                    !in_array($roleId, $employee['roles'], true)) {
+                    continue;
+                }
+
+                $assignmentsPerWeek[$employeeId][$weekIndex] =
+                ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                $assignedPerDay[$dateString][$employeeId] = true;
                 $this->plans->addEntry(
                     $planId,
                     $dateString,
