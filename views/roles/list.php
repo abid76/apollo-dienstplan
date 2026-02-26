@@ -1,0 +1,35 @@
+<?php
+/** @var array $roles */
+?>
+
+<h1>Rollen</h1>
+
+<p><a href="/roles/create">Neue Rolle anlegen</a></p>
+
+<table>
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Bezeichnung</th>
+        <th>Kürzel</th>
+        <th>Aktionen</th>
+    </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($roles as $role): ?>
+        <tr>
+            <td><?php echo (int)$role['id']; ?></td>
+            <td><?php echo htmlspecialchars($role['name'], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars($role['shortcode'], ENT_QUOTES, 'UTF-8'); ?></td>
+            <td class="actions">
+                <a href="/roles/edit?id=<?php echo (int)$role['id']; ?>">Bearbeiten</a>
+                <form class="inline" method="post" action="/roles/delete" onsubmit="return confirm('Rolle wirklich löschen?');">
+                    <input type="hidden" name="id" value="<?php echo (int)$role['id']; ?>">
+                    <button type="submit">Löschen</button>
+                </form>
+            </td>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+</table>
+

@@ -1,0 +1,78 @@
+<?php
+
+namespace App\Controller;
+
+use App\Service\PlanService;
+
+class PlanController
+{
+    private PlanService $service;
+
+    public function __construct()
+    {
+        $this->service = new PlanService();
+    }
+
+    public function form(): void
+    {
+        $content = $this->renderView('plan/form', [
+            'errors' => [],
+        ]);
+        $this->renderLayout($content);
+    }
+
+    public function generate(): void
+    {
+        $startDate = $_POST['start_date'] ?? '';
+        $weeks = (int)($_POST['weeks'] ?? 1);
+        $errors = [];
+
+        if (!$startDate) {
+            $errors[] = 'Startdatum ist erforderlich.';
+        }
+        if ($weeks < 1) {
+            $errors[] = 'Anzahl Wochen muss mindestens 1 sein.';
+        }
+
+        if ($errors) {
+            $content = $this->renderView('plan/form', [
+                'errors' => $errors,
+            ]);
+            $this->renderLayout($content);
+            return;
+        }
+
+        $planId = $this->service->generate($startDate, $weeks);
+
+        header('Location: /plan/show?id=' . $planId);
+        exit;
+    }
+
+    public function show(): void
+    {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $data = $this->service->getPlanViewData($id);
+        if (!$data) {
+            http_response_code(404);
+            echo 'Plan nicht gefunden.';
+            return;
+        }
+
+        $content = $this->renderView('plan/show', $data);
+        $this->renderLayout($content);
+    }
+
+    private function renderView(string $view, array $params = []): string
+    {
+        extract($params);
+        ob_start();
+        require __DIR__ . '/../../views/' . $view . '.php';
+        return ob_get_clean();
+    }
+
+    private function renderLayout(string $content): void
+    {
+        require __DIR__ . '/../../views/layout.php';
+    }
+}
+

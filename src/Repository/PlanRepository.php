@@ -1,0 +1,74 @@
+<?php
+
+namespace App\Repository;
+
+use App\Core\Database;
+use PDO;
+
+class PlanRepository
+{
+    private PDO $db;
+
+    public function __construct()
+    {
+        $this->db = Database::getConnection();
+    }
+
+    public function createPlan(string $startDate, int $weeks): int
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO plan (start_date, weeks) VALUES (:start_date, :weeks)'
+        );
+        $stmt->execute([
+            'start_date' => $startDate,
+            'weeks' => $weeks,
+        ]);
+
+        return (int)$this->db->lastInsertId();
+    }
+
+    public function addEntry(
+        int $planId,
+        string $date,
+        int $shiftId,
+        int $employeeId,
+        int $roleId
+    ): void {
+        $stmt = $this->db->prepare(
+            'INSERT INTO plan_entry (plan_id, date, shift_id, employee_id, role_id)
+             VALUES (:plan_id, :date, :shift_id, :employee_id, :role_id)'
+        );
+        $stmt->execute([
+            'plan_id' => $planId,
+            'date' => $date,
+            'shift_id' => $shiftId,
+            'employee_id' => $employeeId,
+            'role_id' => $roleId,
+        ]);
+    }
+
+    public function getPlan(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM plan WHERE id = :id');
+        $stmt->execute(['id' => $id]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function getEntriesWithDetails(int $planId): array
+    {
+        $sql = 'SELECT pe.*, s.name AS shift_name, s.weekday, s.time_from, s.time_to,
+                       e.first_name, e.last_name,
+                       r.name AS role_name, r.shortcode
+                FROM plan_entry pe
+                JOIN shift s ON pe.shift_id = s.id
+                JOIN employee e ON pe.employee_id = e.id
+                JOIN role r ON pe.role_id = r.id
+                WHERE pe.plan_id = :plan_id
+                ORDER BY pe.date, s.time_from, e.last_name, e.first_name';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute(['plan_id' => $planId]);
+        return $stmt->fetchAll();
+    }
+}
+
