@@ -61,9 +61,11 @@ class PlanService
                     foreach ($employees as $employee) {
                         $employeeId = (int)$employee['id'];
 
-                        if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
+                        if (
+                            !in_array($weekday, $employee['allowed_weekdays'], true) ||
                             !in_array((int)$shift['id'], $employee['allowed_shifts'], true) ||
-                            !in_array($roleId, $employee['roles'], true)) {
+                            !in_array($roleId, $employee['roles'], true)
+                        ) {
                             continue;
                         }
 
@@ -118,39 +120,49 @@ class PlanService
 
             foreach ($employees as $employee) {
                 $employeeId = (int)$employee['id'];
-                if (!empty($assignedPerDay[$dateString][$employeeId])) {
-                    continue;
-                }
-
-                $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
-                if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
-                    continue;
-                }
-
-                // Rolle zufällig auswählen
-                $roles = $employee['roles'];
-                $roleId = $roles[array_rand($roles)];
-
-                // Schicht zufällig auswählen
+                // Zulässige Schichten auswählen
                 $shifts = $employee['allowed_shifts'];
-                $shiftId = $shifts[array_rand($shifts)];
+                foreach ($shifts as $shiftId) {
+                    
+                    // Wenn der Mitarbeiter bereits an diesem Tag besetzt ist, überspringen
+                    if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                        continue;
+                    }
+                    // Wenn der Mitarbeiter bereits die maximale Anzahl an Schichten pro Woche erreicht hat, überspringen
+                    $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
+                    if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                        continue;
+                    }
 
-                if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
-                    !in_array($shiftId, $employee['allowed_shifts'], true) ||
-                    !in_array($roleId, $employee['roles'], true)) {
-                    continue;
+                    // Passende Regel auswählen
+                    $shiftRules = $this->rules->findByShift((int)$shiftId);
+                    // Regeln auswählen, die nicht in der ersten Schleife abschließend behandelt wurden
+                    $shiftRules = array_filter($shiftRules, function ($rule) {
+                        return $rule['required_count_exact'] === 0;
+                    });
+                    if (empty($shiftRules)) {
+                        continue;
+                    } else {
+                        // Ansonsten passende Rolle ermitteln
+                        $intersection_roles = array_intersect(array_column($shiftRules, 'role_id'), $employee['roles']);
+                        if (empty($intersection_roles)) {
+                            continue;
+                        } else {
+                            // Rolle zufällig auswählen
+                            $roleId = $intersection_roles[array_rand($intersection_roles)];
+                        }
+                    }
+                    $assignmentsPerWeek[$employeeId][$weekIndex] =
+                        ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                    $assignedPerDay[$dateString][$employeeId] = true;
+                    $this->plans->addEntry(
+                        $planId,
+                        $dateString,
+                        (int)$shiftId,
+                        $employeeId,
+                        $roleId
+                    );
                 }
-
-                $assignmentsPerWeek[$employeeId][$weekIndex] =
-                ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
-                $assignedPerDay[$dateString][$employeeId] = true;
-                $this->plans->addEntry(
-                    $planId,
-                    $dateString,
-                    (int)$shiftId,
-                    $employeeId,
-                    $roleId
-                );
             }
         }
 
@@ -224,4 +236,3 @@ class PlanService
         return $result;
     }
 }
-

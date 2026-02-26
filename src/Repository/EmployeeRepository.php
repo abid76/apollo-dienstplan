@@ -21,7 +21,7 @@ class EmployeeRepository
     }
 
     /**
-     * Wie findAll(), ergänzt um allowed_weekdays (Array von 0–6) pro Mitarbeiter.
+     * Wie findAll(), ergänzt um allowed_weekdays (Array von 0–6) und role_shortcodes (Array) pro Mitarbeiter.
      */
     public function findAllWithAllowedWeekdays(): array
     {
@@ -33,11 +33,30 @@ class EmployeeRepository
             $id = (int)$row['employee_id'];
             $byEmployee[$id][] = (int)$row['weekday'];
         }
+        $roleShortcodes = $this->getRoleShortcodesByEmployee();
         foreach ($employees as &$emp) {
             $emp['allowed_weekdays'] = $byEmployee[(int)$emp['id']] ?? [];
+            $emp['role_shortcodes'] = $roleShortcodes[(int)$emp['id']] ?? [];
         }
         unset($emp);
         return $employees;
+    }
+
+    /**
+     * Liefert pro Mitarbeiter-ID ein Array von Rollen-Kürzeln (sortiert).
+     * @return array<int, array<string>>
+     */
+    public function getRoleShortcodesByEmployee(): array
+    {
+        $stmt = $this->db->query(
+            'SELECT er.employee_id, r.shortcode FROM employee_role er JOIN role r ON r.id = er.role_id ORDER BY er.employee_id, r.shortcode'
+        );
+        $byEmployee = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $id = (int)$row['employee_id'];
+            $byEmployee[$id][] = $row['shortcode'];
+        }
+        return $byEmployee;
     }
 
     public function find(int $id): ?array
