@@ -13,12 +13,29 @@ class PlanController
         $this->service = new PlanService();
     }
 
+    public function index(): void
+    {
+        $plans = $this->service->listPlans();
+        $content = $this->renderView('plan/list', ['plans' => $plans]);
+        $this->renderLayout($content);
+    }
+
     public function form(): void
     {
         $content = $this->renderView('plan/form', [
             'errors' => [],
         ]);
         $this->renderLayout($content);
+    }
+
+    public function delete(): void
+    {
+        $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+        if ($id > 0) {
+            $this->service->deletePlan($id);
+        }
+        header('Location: /plan');
+        exit;
     }
 
     public function generate(): void

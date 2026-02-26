@@ -4,6 +4,7 @@
 /** @var array $errors */
 /** @var array $shifts */
 /** @var array $roles */
+require __DIR__ . '/../helpers/format_time.php';
 
 $weekdayShort = [
     0 => 'Mo',
@@ -54,7 +55,7 @@ $requiredCountExact = !empty($rule['required_count_exact']);
                 <option value="<?php echo (int)$shift['id']; ?>" <?php echo ((int)$shift['id'] === $shiftId) ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?>
                     (<?php echo htmlspecialchars($weekdayStr, ENT_QUOTES, 'UTF-8'); ?>,
-                    <?php echo htmlspecialchars(substr($shift['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>-<?php echo htmlspecialchars(substr($shift['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>)
+                    <?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)
                 </option>
             <?php endforeach; ?>
         </select>

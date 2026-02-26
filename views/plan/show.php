@@ -3,6 +3,7 @@
 /** @var array $employees */
 /** @var array $dates */
 /** @var array $grid */
+require __DIR__ . '/../helpers/format_time.php';
 
 $weekdayNames = [
     1 => 'Mo',
@@ -69,7 +70,7 @@ foreach ($dates as $date) {
                 $times = [];
                 $roles = [];
                 foreach ($entries as $entry) {
-                    $times[] = substr($entry['time_from'] ?? '', 0, 5) . '-' . substr($entry['time_to'] ?? '', 0, 5);
+                    $times[] = formatTimeRange($entry['time_from'] ?? '', $entry['time_to'] ?? '');
                     $roles[] = $entry['shortcode'] ?? '';
                 }
                 ?>
@@ -96,5 +97,5 @@ foreach ($dates as $date) {
     </tfoot>
 </table>
 
-<p><a href="/plan">Neuen Plan erstellen</a></p>
+<p><a href="/plan">Zurück zur Übersicht</a> | <a href="/plan/create">Neuen Plan erstellen</a></p>
 

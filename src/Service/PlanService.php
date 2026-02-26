@@ -22,6 +22,14 @@ class PlanService
         $this->employees = new EmployeeRepository();
     }
 
+    /**
+     * Alle Pläne für die Listenansicht.
+     */
+    public function listPlans(): array
+    {
+        return $this->plans->findAll();
+    }
+
     public function generate(string $startDate, int $weeks): int
     {
         $planId = $this->plans->createPlan($startDate, $weeks);
@@ -123,7 +131,7 @@ class PlanService
                 // Zulässige Schichten auswählen
                 $shifts = $employee['allowed_shifts'];
                 foreach ($shifts as $shiftId) {
-                    
+
                     // Wenn der Mitarbeiter bereits an diesem Tag besetzt ist, überspringen
                     if (!empty($assignedPerDay[$dateString][$employeeId])) {
                         continue;
@@ -167,6 +175,11 @@ class PlanService
         }
 
         return $planId;
+    }
+
+    public function deletePlan(int $id): void
+    {
+        $this->plans->delete($id);
     }
 
     public function getPlanViewData(int $planId): ?array

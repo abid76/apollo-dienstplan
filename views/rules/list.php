@@ -1,5 +1,6 @@
 <?php
 /** @var array $rules */
+require __DIR__ . '/../helpers/format_time.php';
 
 $weekdayShort = [
     0 => 'Mo',
@@ -46,7 +47,7 @@ $weekdayShort = [
                 echo htmlspecialchars(implode(', ', $labels), ENT_QUOTES, 'UTF-8');
                 ?>
             </td>
-            <td><?php echo htmlspecialchars(substr($rule['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>-<?php echo htmlspecialchars(substr($rule['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars(formatTimeRange($rule['time_from'] ?? '', $rule['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars($rule['role_name'], ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($rule['shortcode'], ENT_QUOTES, 'UTF-8'); ?>)</td>
             <td><?php echo !empty($rule['required_count_exact']) ? (int)$rule['required_count'] : '≥' . (int)$rule['required_count']; ?></td>
             <td class="actions">

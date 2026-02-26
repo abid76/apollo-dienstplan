@@ -33,6 +33,7 @@ $defaultStartStr = $defaultStart->format('Y-m-d');
     </div>
     <div style="margin-top: 10px;">
         <button type="submit">Plan erzeugen</button>
+        <a href="/plan">Abbrechen</a>
     </div>
 </form>
 

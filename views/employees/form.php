@@ -4,6 +4,7 @@
 /** @var array $errors */
 /** @var array $shifts */
 /** @var array $roles */
+require __DIR__ . '/../helpers/format_time.php';
 
 $weekdayNames = [
     0 => 'Montag',
@@ -88,7 +89,7 @@ $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
                 <input type="checkbox" name="allowed_shifts[]" value="<?php echo (int)$shift['id']; ?>" <?php echo in_array((int)$shift['id'], $allowedShifts, true) ? 'checked' : ''; ?>>
                 <?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?>
                 (<?php echo htmlspecialchars(implode(', ', $weekdayLabels), ENT_QUOTES, 'UTF-8'); ?>,
-                <?php echo htmlspecialchars(substr($shift['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>-<?php echo htmlspecialchars(substr($shift['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>)
+                <?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)
             </label><br>
         <?php endforeach; ?>
     </fieldset>

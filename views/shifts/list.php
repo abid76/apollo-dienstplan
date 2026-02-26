@@ -1,5 +1,6 @@
 <?php
 /** @var array $shifts */
+require __DIR__ . '/../helpers/format_time.php';
 
 $weekdayShort = [
     0 => 'Mo',
@@ -22,8 +23,7 @@ $weekdayShort = [
         <th>ID</th>
         <th>Name</th>
         <th>Wochentag</th>
-        <th>Von</th>
-        <th>Bis</th>
+        <th>Uhrzeit</th>
         <th>Aktionen</th>
     </tr>
     </thead>
@@ -45,8 +45,7 @@ $weekdayShort = [
                 echo htmlspecialchars(implode(', ', $labels), ENT_QUOTES, 'UTF-8');
                 ?>
             </td>
-            <td><?php echo htmlspecialchars(substr($shift['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?></td>
-            <td><?php echo htmlspecialchars(substr($shift['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?></td>
+            <td><?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
             <td class="actions">
                 <a href="/shifts/edit?id=<?php echo (int)$shift['id']; ?>">Bearbeiten</a>
                 <form class="inline" method="post" action="/shifts/delete" onsubmit="return confirm('Schicht wirklich löschen?');">

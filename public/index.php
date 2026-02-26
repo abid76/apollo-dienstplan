@@ -68,9 +68,11 @@ $router->post('/rules/edit', [new RuleController(), 'update']);
 $router->post('/rules/delete', [new RuleController(), 'delete']);
 
 // Plan
-$router->get('/plan', [new PlanController(), 'form']);
+$router->get('/plan', [new PlanController(), 'index']);
+$router->get('/plan/create', [new PlanController(), 'form']);
 $router->post('/plan/generate', [new PlanController(), 'generate']);
 $router->get('/plan/show', [new PlanController(), 'show']);
+$router->post('/plan/delete', [new PlanController(), 'delete']);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';

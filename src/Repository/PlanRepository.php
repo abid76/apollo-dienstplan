@@ -14,6 +14,15 @@ class PlanRepository
         $this->db = Database::getConnection();
     }
 
+    /**
+     * Alle Pläne, neueste zuerst (nach Startdatum absteigend).
+     */
+    public function findAll(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM plan ORDER BY start_date DESC, id DESC');
+        return $stmt->fetchAll();
+    }
+
     public function createPlan(string $startDate, int $weeks): int
     {
         $stmt = $this->db->prepare(
@@ -53,6 +62,12 @@ class PlanRepository
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    public function delete(int $id): void
+    {
+        $stmt = $this->db->prepare('DELETE FROM plan WHERE id = :id');
+        $stmt->execute(['id' => $id]);
     }
 
     public function getEntriesWithDetails(int $planId): array
