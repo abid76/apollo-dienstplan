@@ -5,14 +5,14 @@
 /** @var array $shifts */
 /** @var array $roles */
 
-$weekdayNames = [
-    0 => 'Montag',
-    1 => 'Dienstag',
-    2 => 'Mittwoch',
-    3 => 'Donnerstag',
-    4 => 'Freitag',
-    5 => 'Samstag',
-    6 => 'Sonntag',
+$weekdayShort = [
+    0 => 'Mo',
+    1 => 'Di',
+    2 => 'Mi',
+    3 => 'Do',
+    4 => 'Fr',
+    5 => 'Sa',
+    6 => 'So',
 ];
 
 $id = $rule['id'] ?? null;
@@ -39,9 +39,20 @@ $requiredCount = $rule['required_count'] ?? 1;
         <select id="shift_id" name="shift_id">
             <option value="">Bitte wählen</option>
             <?php foreach ($shifts as $shift): ?>
+                <?php
+                $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int) $shift['weekday'] : 0];
+                $weekdayLabels = [];
+                foreach ((array) $weekdays as $day) {
+                    $day = (int) $day;
+                    if (isset($weekdayShort[$day])) {
+                        $weekdayLabels[] = $weekdayShort[$day];
+                    }
+                }
+                $weekdayStr = implode(', ', $weekdayLabels);
+                ?>
                 <option value="<?php echo (int)$shift['id']; ?>" <?php echo ((int)$shift['id'] === $shiftId) ? 'selected' : ''; ?>>
                     <?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?>
-                    (<?php echo $weekdayNames[(int)$shift['weekday']] ?? (int)$shift['weekday']; ?>,
+                    (<?php echo htmlspecialchars($weekdayStr, ENT_QUOTES, 'UTF-8'); ?>,
                     <?php echo htmlspecialchars(substr($shift['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>-<?php echo htmlspecialchars(substr($shift['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>)
                 </option>
             <?php endforeach; ?>

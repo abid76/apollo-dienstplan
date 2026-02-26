@@ -1,14 +1,14 @@
 <?php
 /** @var array $rules */
 
-$weekdayNames = [
-    0 => 'Montag',
-    1 => 'Dienstag',
-    2 => 'Mittwoch',
-    3 => 'Donnerstag',
-    4 => 'Freitag',
-    5 => 'Samstag',
-    6 => 'Sonntag',
+$weekdayShort = [
+    0 => 'Mo',
+    1 => 'Di',
+    2 => 'Mi',
+    3 => 'Do',
+    4 => 'Fr',
+    5 => 'Sa',
+    6 => 'So',
 ];
 ?>
 
@@ -33,7 +33,19 @@ $weekdayNames = [
         <tr>
             <td><?php echo (int)$rule['id']; ?></td>
             <td><?php echo htmlspecialchars($rule['shift_name'], ENT_QUOTES, 'UTF-8'); ?></td>
-            <td><?php echo $weekdayNames[(int)$rule['weekday']] ?? (int)$rule['weekday']; ?></td>
+            <td>
+                <?php
+                $weekdays = $rule['shift_weekdays'] ?? [isset($rule['weekday']) ? (int) $rule['weekday'] : 0];
+                $labels = [];
+                foreach ((array) $weekdays as $day) {
+                    $day = (int) $day;
+                    if (isset($weekdayShort[$day])) {
+                        $labels[] = $weekdayShort[$day];
+                    }
+                }
+                echo htmlspecialchars(implode(', ', $labels), ENT_QUOTES, 'UTF-8');
+                ?>
+            </td>
             <td><?php echo htmlspecialchars(substr($rule['time_from'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?>-<?php echo htmlspecialchars(substr($rule['time_to'] ?? '', 0, 5), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars($rule['role_name'], ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($rule['shortcode'], ENT_QUOTES, 'UTF-8'); ?>)</td>
             <td><?php echo (int)$rule['required_count']; ?></td>
