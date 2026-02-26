@@ -30,6 +30,29 @@ foreach ($dates as $date) {
     }
     $roleCountsByDate[$date] = $counts;
 }
+
+// Pro Datum: Schichten mit Mitarbeiteranzahl (Schicht = Name + Uhrzeit)
+$shiftsByDate = [];
+foreach ($dates as $date) {
+    $byShift = [];
+    foreach ($employees as $employee) {
+        $entries = $grid[$employee['id']][$date] ?? [];
+        foreach ($entries as $entry) {
+            $key = ($entry['shift_name'] ?? '') . '|' . ($entry['time_from'] ?? '') . '|' . ($entry['time_to'] ?? '');
+            if ($key !== '||') {
+                if (!isset($byShift[$key])) {
+                    $byShift[$key] = [
+                        'time_range' => formatTimeRange($entry['time_from'] ?? '', $entry['time_to'] ?? ''),
+                        'count' => 0,
+                        'time_from' => $entry['time_from'] ?? '',
+                    ];
+                }
+                $byShift[$key]['count']++;
+            }
+        }
+    }
+    $shiftsByDate[$date] = $byShift;
+}
 ?>
 
 <h1>Dienstplan #<?php echo (int)$plan['id']; ?></h1>
@@ -39,7 +62,9 @@ foreach ($dates as $date) {
     Wochen: <?php echo (int)$plan['weeks']; ?>
 </p>
 
-<table>
+<style>.plan-table th:first-child,
+.plan-table td:first-child { white-space: nowrap; }</style>
+<table class="plan-table">
     <thead>
     <tr>
         <th rowspan="2">Mitarbeiter</th>
@@ -91,7 +116,21 @@ foreach ($dates as $date) {
                 $parts[] = htmlspecialchars($shortcode, ENT_QUOTES, 'UTF-8') . ': ' . $n;
             }
             ?>
-            <td colspan="2" style="text-align: center;"><?php echo implode(', ', $parts); ?></td>
+            <td colspan="2" style="text-align: left;"><?php echo implode(', ', $parts); ?></td>
+        <?php endforeach; ?>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Schichten</th>
+        <?php foreach ($dates as $date): ?>
+            <?php
+            $shifts = $shiftsByDate[$date] ?? [];
+            uasort($shifts, fn($a, $b) => ($a['time_from'] ?? '') <=> ($b['time_from'] ?? ''));
+            $parts = [];
+            foreach ($shifts as $info) {
+                $parts[] = htmlspecialchars($info['time_range'], ENT_QUOTES, 'UTF-8') . ': ' . $info['count'];
+            }
+            ?>
+            <td colspan="2" style="text-align: left;"><?php echo implode('<br>', $parts); ?></td>
         <?php endforeach; ?>
     </tr>
     </tfoot>
