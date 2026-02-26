@@ -111,10 +111,21 @@ class PlanService
                     }
                 }
             }
+        }
 
-            // Nun für alle Mitarbeiter sicherstellen, dass sie in den Schichten gemäß ihrer Anzahl der Schichten besetzt werden
+        // Nun für alle Mitarbeiter sicherstellen, dass sie in den Schichten gemäß ihrer Anzahl der Schichten besetzt werden
+        for ($dayIndex = 0; $dayIndex < $totalDays; $dayIndex++) {
+            $date = $start->modify("+{$dayIndex} day");
+            $dateString = $date->format('Y-m-d');
+            $weekday = (int)$date->format('N') - 1; // 0 = Montag
+            $weekIndex = intdiv($dayIndex, 7);
+
             foreach ($employees as $employee) {
                 $employeeId = (int)$employee['id'];
+                if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                    continue;
+                }
+
                 $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
                 if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
                     continue;
@@ -126,9 +137,6 @@ class PlanService
 
                 // Schicht zufällig auswählen
                 $shifts = $employee['allowed_shifts'];
-                if (empty($shifts)) {
-                    throw new \Exception('Mitarbeiter '.$employee['first_name'].' '.$employee['last_name'].' hat keine Schichten.');
-                }
                 $shiftId = $shifts[array_rand($shifts)];
 
                 $this->plans->addEntry(
