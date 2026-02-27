@@ -44,182 +44,207 @@ class PlanService
         $assignedPerDay = [];
 
         $completeShiftRoleAssignment = [];
-        $remainingEmployeeShifts = [];
-        foreach ($employees as $employee) {
-            $remainingEmployeeShifts[(int)$employee['id']] = (int)$employee['max_shifts_per_week'];
-        }
 
-        for ($dayIndex = 0; $dayIndex < $totalDays; $dayIndex++) {
-            $date = $start->modify("+{$dayIndex} day");
-            $dateString = $date->format('Y-m-d');
-            $weekday = (int)$date->format('N') - 1; // 0 = Montag
-            $weekIndex = intdiv($dayIndex, 7);
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $remainingEmployeeShifts = [];
+            foreach ($employees as $employee) {
+                $remainingEmployeeShifts[(int)$employee['id']] = (int)$employee['max_shifts_per_week'];
+            }
+            for ($weekday = 0; $weekday < 7; $weekday++) {
+                $dayIndex = $weekIndex * 7 + $weekday;
+                $date = $start->modify("+{$dayIndex} day");
+                $dateString = $date->format('Y-m-d');
+                $actualWeekday = (int)$date->format('N') - 1; // 0 = Montag
 
-            foreach ($shifts as $shift) {
+                foreach ($shifts as $shift) {
 
-                $shiftId = (int)$shift['id'];
-                // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
-                $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
-                if (!in_array($weekday, $shiftWeekdays, true)) {
-                    continue;
-                }
-
-                $shiftRules = $this->rules->findByShift($shiftId);
-                if (!$shiftRules) {
-                    continue;
-                }
-
-                foreach ($shiftRules as $rule) {
-                    $roleId = (int)$rule['role_id'];
-                    $requiredCount = (int)$rule['required_count'];
-
-                    $candidates = [];
-                    foreach ($employees as $employee) {
-                        $employeeId = (int)$employee['id'];
-
-                        if (
-                            !in_array($weekday, $employee['allowed_weekdays'], true) ||
-                            !in_array($roleId, $employee['roles'], true)
-                        ) {
-                            continue;
-                        }
-                        $allowedShifts = $employee['allowed_shifts'] ?? [];
-                        if (!in_array($shiftId, $allowedShifts, true)) {
-                            continue;
-                        }
-                        $allowedShiftsToday = $employee['allowed_weekday_shifts'][$weekday] ?? [];
-                        if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
-                            continue;
-                        }
-                        $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
-                        if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
-                            continue;
-                        }
-                        if (!empty($assignedPerDay[$dateString][$employeeId])) {
-                            continue;
-                        }
-
-                        $candidates[] = $employeeId;
-                    }
-
-                    if (!$candidates) {
+                    $shiftId = (int)$shift['id'];
+                    // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
+                    $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                    if (!in_array($actualWeekday, $shiftWeekdays, true)) {
                         continue;
                     }
 
-                    // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
-                    // damit Kapazität (Anz. Schichten/Woche) genutzt wird
-                    usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex) {
-                        $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
-                        $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
-                        return $ca <=> $cb;
-                    });
-                    $selected = array_slice($candidates, 0, $requiredCount);
+                    $shiftRules = $this->rules->findByShift($shiftId);
+                    if (!$shiftRules) {
+                        continue;
+                    }
 
-                    foreach ($selected as $employeeId) {
-                        $assignmentsPerWeek[$employeeId][$weekIndex] =
-                            ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
-                        $assignedPerDay[$dateString][$employeeId] = true;
-                        if ($rule['required_count_exact'] === 1) {
-                            $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
+                    foreach ($shiftRules as $rule) {
+                        $roleId = (int)$rule['role_id'];
+                        $requiredCount = (int)$rule['required_count'];
+
+                        $candidates = [];
+                        foreach ($employees as $employee) {
+                            $employeeId = (int)$employee['id'];
+
+                            if (
+                                !in_array($actualWeekday, $employee['allowed_weekdays'], true) ||
+                                !in_array($roleId, $employee['roles'], true)
+                            ) {
+                                continue;
+                            }
+                            $allowedShifts = $employee['allowed_shifts'] ?? [];
+                            if (!in_array($shiftId, $allowedShifts, true)) {
+                                continue;
+                            }
+                            $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
+                            if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
+                                continue;
+                            }
+                            $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
+                            if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                                continue;
+                            }
+                            if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                                continue;
+                            }
+
+                            $candidates[] = $employeeId;
                         }
 
-                        $this->plans->addEntry(
-                            $planId,
-                            $dateString,
-                            $shiftId,
-                            $employeeId,
-                            $roleId
-                        );
-                        $remainingEmployeeShifts[$employeeId]--;
+                        if (!$candidates) {
+                            continue;
+                        }
+
+                        // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
+                        // damit Kapazität (Anz. Schichten/Woche) genutzt wird
+                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex) {
+                            $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
+                            $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
+                            return $ca <=> $cb;
+                        });
+                        $selected = array_slice($candidates, 0, $requiredCount);
+
+                        foreach ($selected as $employeeId) {
+                            $assignmentsPerWeek[$employeeId][$weekIndex] =
+                                ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                            $assignedPerDay[$dateString][$employeeId] = $roleId;
+                            $remainingEmployeeShifts[$employeeId]--;
+                            if ($rule['required_count_exact'] === 1) {
+                                $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
+                            }
+                            $this->plans->addEntry(
+                                $planId,
+                                $dateString,
+                                $shiftId,
+                                $employeeId,
+                                $roleId
+                            );
+                        }
                     }
                 }
             }
         }
 
         // Nun für alle Mitarbeiter sicherstellen, dass sie auf die Schichten verteilt sind
-        for ($dayIndex = 0; $dayIndex < $totalDays; $dayIndex++) {
-            $date = $start->modify("+{$dayIndex} day");
-            $dateString = $date->format('Y-m-d');
-            $weekday = (int)$date->format('N') - 1; // 0 = Montag
-            $weekIndex = intdiv($dayIndex, 7);
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $remainingEmployeeShifts = [];
+            foreach ($employees as $employee) {
+                $remainingEmployeeShifts[(int)$employee['id']] =
+                    (int)$employee['max_shifts_per_week'] - ($assignmentsPerWeek[$employee['id']][$weekIndex] ?? 0);
+            }
+            // Hier gilt folgende Logik
+            // Wir iterieren über alle Wochentage und Schichten und fügen nach und nach jeweils ein Mitarbeiter hinzu
+            // Dies tun wir solange, bis alle Mitarbeiter auf alle Schichten verteilt sind
+            // Durch das tageweise hinzufügen eines einzelnen Mitarbeiters werden die Wochentage halbwegs gleichmäßig besetzt
+            while (max($remainingEmployeeShifts) > 0) {
+                for ($weekday = 0; $weekday < 7; $weekday++) {
+                    $dayIndex = $weekIndex * 7 + $weekday;
+                    $date = $start->modify("+{$dayIndex} day");
+                    $dateString = $date->format('Y-m-d');
+                    $actualWeekday = (int)$date->format('N') - 1; // 0 = Montag
 
-            foreach ($shifts as $shift) {
+                    foreach ($shifts as $shift) {
 
-                $shiftId = (int)$shift['id'];
-                // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
-                $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
-                if (!in_array($weekday, $shiftWeekdays, true)) {
-                    continue;
-                }
-
-                $shiftRules = $this->rules->findByShift($shiftId);
-                if (!$shiftRules) {
-                    continue;
-                }
-
-                foreach ($shiftRules as $rule) {
-                    $roleId = (int)$rule['role_id'];
-                    if ($completeShiftRoleAssignment[$dateString][$shiftId][$roleId] ?? false) {
-                        continue;
-                    }
-
-                    $candidates = [];
-                    foreach ($employees as $employee) {
-                        $employeeId = (int)$employee['id'];
-
-                        if (
-                            !in_array($weekday, $employee['allowed_weekdays'], true) ||
-                            !in_array($roleId, $employee['roles'], true)
-                        ) {
-                            continue;
-                        }
-                        $allowedShifts = $employee['allowed_shifts'] ?? [];
-                        if (!in_array($shiftId, $allowedShifts, true)) {
-                            continue;
-                        }
-                        $allowedShiftsToday = $employee['allowed_weekday_shifts'][$weekday] ?? [];
-                        if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
-                            continue;
-                        }
-                        $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
-                        if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
-                            continue;
-                        }
-                        if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                        $shiftId = (int)$shift['id'];
+                        // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
+                        $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                        if (!in_array($actualWeekday, $shiftWeekdays, true)) {
                             continue;
                         }
 
-                        $candidates[] = $employeeId;
-                    }
-
-                    if (!$candidates) {
-                        continue;
-                    }
-
-                    // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
-                    // damit Kapazität (Anz. Schichten/Woche) genutzt wird
-                    usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex) {
-                        $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
-                        $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
-                        return $ca <=> $cb;
-                    });
-
-                    foreach ($candidates as $employeeId) {
-                        $assignmentsPerWeek[$employeeId][$weekIndex] =
-                            ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
-                        $assignedPerDay[$dateString][$employeeId] = true;
-                        if ($rule['required_count_exact'] === 1) {
-                            $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
+                        $shiftRules = $this->rules->findByShift($shiftId);
+                        if (!$shiftRules) {
+                            continue;
                         }
 
-                        $this->plans->addEntry(
-                            $planId,
-                            $dateString,
-                            $shiftId,
-                            $employeeId,
-                            $roleId
-                        );
-                        $remainingEmployeeShifts[$employeeId]--;
+                        foreach ($shiftRules as $rule) {
+                            $roleId = (int)$rule['role_id'];
+                            if ($completeShiftRoleAssignment[$dateString][$shiftId][$roleId] ?? false) {
+                                continue;
+                            }
+
+                            $candidates = [];
+                            foreach ($employees as $employee) {
+                                $employeeId = (int)$employee['id'];
+
+                                if (
+                                    !in_array($actualWeekday, $employee['allowed_weekdays'], true) ||
+                                    !in_array($roleId, $employee['roles'], true)
+                                ) {
+                                    continue;
+                                }
+                                $allowedShifts = $employee['allowed_shifts'] ?? [];
+                                if (!in_array($shiftId, $allowedShifts, true)) {
+                                    continue;
+                                }
+                                $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
+                                if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
+                                    continue;
+                                }
+                                $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
+                                if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                                    continue;
+                                }
+                                if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                                    continue;
+                                }
+
+                                $candidates[] = $employeeId;
+                            }
+
+                            if (!$candidates) {
+                                continue;
+                            }
+
+                            // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
+                            // damit Kapazität (Anz. Schichten/Woche) genutzt wird
+                            usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $dateString, $assignedPerDay) {
+                                if ($weekIndex > 0) {
+                                    // Falls der Mitarbeiter $a an diesem Tag der letzten Woche bereits hinzugefügt wurde,
+                                    // Mitarbeiter $b aber nicht, gewinnt Mitarbeiter $b.
+                                    $datePrev = (new \DateTimeImmutable($dateString))->modify('-7 days')->format('Y-m-d');
+                                    $aAssignedLastWeek = !empty($assignedPerDay[$datePrev][$a]);
+                                    $bAssignedLastWeek = !empty($assignedPerDay[$datePrev][$b]);
+                                    if ($aAssignedLastWeek && !$bAssignedLastWeek) {
+                                        return 1;
+                                    }
+                                    if (!$aAssignedLastWeek && $bAssignedLastWeek) {
+                                        return -1;
+                                    }
+                                }
+
+                                $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
+                                $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
+                                return $ca <=> $cb;
+                            });
+                            $selected = array_slice($candidates, 0, 1);
+
+                            foreach ($selected as $employeeId) {
+                                $assignmentsPerWeek[$employeeId][$weekIndex] =
+                                    ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                                $assignedPerDay[$dateString][$employeeId] = $roleId;
+                                $remainingEmployeeShifts[$employeeId]--;
+                                $this->plans->addEntry(
+                                    $planId,
+                                    $dateString,
+                                    $shiftId,
+                                    $employeeId,
+                                    $roleId
+                                );
+                            }
+                        }
                     }
                 }
             }
