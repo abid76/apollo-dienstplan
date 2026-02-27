@@ -43,6 +43,8 @@ class PlanService
         $assignmentsPerWeek = [];
         $assignedPerDay = [];
 
+        $completeShiftRoleAssignment = [];
+
         for ($dayIndex = 0; $dayIndex < $totalDays; $dayIndex++) {
             $date = $start->modify("+{$dayIndex} day");
             $dateString = $date->format('Y-m-d');
@@ -69,7 +71,8 @@ class PlanService
                     foreach ($employees as $employee) {
                         $employeeId = (int)$employee['id'];
 
-                        if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
+                        if (
+                            !in_array($weekday, $employee['allowed_weekdays'], true) ||
                             !in_array($roleId, $employee['roles'], true)
                         ) {
                             continue;
@@ -109,6 +112,9 @@ class PlanService
                         $assignmentsPerWeek[$employeeId][$weekIndex] =
                             ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
                         $assignedPerDay[$dateString][$employeeId] = true;
+                        if ($rule['required_count_exact'] === 1) {
+                            $completeShiftRoleAssignment[$dateString][$shift['id']][$roleId] = true;
+                        }
 
                         $this->plans->addEntry(
                             $planId,
@@ -148,20 +154,20 @@ class PlanService
 
                     // Passende Regel auswählen
                     $shiftRules = $this->rules->findByShift((int)$shiftId);
-                    // Regeln auswählen, die nicht in der ersten Schleife abschließend behandelt wurden
-                    $shiftRules = array_filter($shiftRules, function ($rule) {
-                        return $rule['required_count_exact'] === 0;
-                    });
                     if (empty($shiftRules)) {
                         continue;
                     } else {
                         // Ansonsten passende Rolle ermitteln
-                        $intersection_roles = array_intersect(array_column($shiftRules, 'role_id'), $employee['roles']);
-                        if (empty($intersection_roles)) {
+                        $valid_roles = array_intersect(array_column($shiftRules, 'role_id'), $employee['roles']);
+                        // Vollständig besetze Schicht mit passender Rolle ignorieren
+                        $valid_roles = array_filter($valid_roles, function ($roleId) use ($completeShiftRoleAssignment, $dateString, $shiftId) {
+                            return !empty($completeShiftRoleAssignment[$dateString][$shiftId][$roleId]) ? false : true;
+                        });
+                        if (empty($valid_roles)) {
                             continue;
                         } else {
                             // Rolle zufällig auswählen
-                            $roleId = $intersection_roles[array_rand($intersection_roles)];
+                            $roleId = $valid_roles[array_rand($valid_roles)];
                         }
                     }
                     $assignmentsPerWeek[$employeeId][$weekIndex] =

@@ -197,13 +197,20 @@ class EmployeeRepository
         }
     }
 
+    /**
+     * Liefert alle Rollen-IDs für den angegebenen Mitarbeiter.
+     *
+     * @param int $employeeId ID des Mitarbeiters
+     * @return int[] Array von Rollen-IDs (aufsteigend sortiert)
+     */
     public function getRoles(int $employeeId): array
     {
         $stmt = $this->db->prepare(
             'SELECT role_id FROM employee_role WHERE employee_id = :id ORDER BY role_id'
         );
         $stmt->execute(['id' => $employeeId]);
-        return array_map('intval', array_column($stmt->fetchAll(), 'role_id'));
+        $result = array_map('intval', array_column($stmt->fetchAll(), 'role_id'));
+        return $result;
     }
 
     public function setRoles(int $employeeId, array $roleIds): void
@@ -226,4 +233,3 @@ class EmployeeRepository
         }
     }
 }
-
