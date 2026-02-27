@@ -32,11 +32,9 @@ CREATE TABLE IF NOT EXISTS role (
 
 CREATE TABLE IF NOT EXISTS employee (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  first_name VARCHAR(100) NOT NULL,
-  last_name VARCHAR(100) NULL,
+  name VARCHAR(100) NOT NULL,
   max_shifts_per_week TINYINT UNSIGNED NOT NULL DEFAULT 5,
-  PRIMARY KEY (id),
-  KEY idx_employees_last_name (last_name)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS employee_allowed_weekday (

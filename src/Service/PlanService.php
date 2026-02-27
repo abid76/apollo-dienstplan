@@ -213,8 +213,7 @@ class PlanService
             $employees[$employeeId] = $employees[$employeeId]
                 ?? [
                     'id' => $employeeId,
-                    'first_name' => $entry['first_name'],
-                    'last_name' => $entry['last_name'],
+                    'name' => $entry['employee_name'],
                 ];
 
             $grid[$employeeId][$date][] = [
@@ -228,7 +227,7 @@ class PlanService
 
         usort(
             $employees,
-            fn($a, $b) => [$a['last_name'], $a['first_name']] <=> [$b['last_name'], $b['first_name']]
+            fn($a, $b) => ($a['name'] ?? '') <=> ($b['name'] ?? '')
         );
 
         return [

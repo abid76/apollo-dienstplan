@@ -87,7 +87,7 @@ foreach ($dates as $date) {
     <?php foreach ($employees as $employee): ?>
         <tr>
             <td>
-                <?php echo htmlspecialchars(trim($employee['last_name'] . ', ' . $employee['first_name'], ', '), ENT_QUOTES, 'UTF-8'); ?>
+                <?php echo htmlspecialchars($employee['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
             </td>
             <?php foreach ($dates as $date): ?>
                 <?php

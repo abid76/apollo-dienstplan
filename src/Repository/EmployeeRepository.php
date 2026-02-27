@@ -16,7 +16,7 @@ class EmployeeRepository
 
     public function findAll(): array
     {
-        $stmt = $this->db->query('SELECT * FROM employee ORDER BY last_name, first_name');
+        $stmt = $this->db->query('SELECT * FROM employee ORDER BY name');
         return $stmt->fetchAll();
     }
 
@@ -67,29 +67,27 @@ class EmployeeRepository
         return $row ?: null;
     }
 
-    public function create(string $firstName, string $lastName, int $maxShiftsPerWeek): int
+    public function create(string $name, int $maxShiftsPerWeek): int
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO employee (first_name, last_name, max_shifts_per_week) VALUES (:first_name, :last_name, :max)'
+            'INSERT INTO employee (name, max_shifts_per_week) VALUES (:name, :max)'
         );
         $stmt->execute([
-            'first_name' => $firstName,
-            'last_name' => $lastName,
+            'name' => $name,
             'max' => $maxShiftsPerWeek,
         ]);
 
         return (int)$this->db->lastInsertId();
     }
 
-    public function update(int $id, string $firstName, string $lastName, int $maxShiftsPerWeek): void
+    public function update(int $id, string $name, int $maxShiftsPerWeek): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE employee SET first_name = :first_name, last_name = :last_name, max_shifts_per_week = :max WHERE id = :id'
+            'UPDATE employee SET name = :name, max_shifts_per_week = :max WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
-            'first_name' => $firstName,
-            'last_name' => $lastName,
+            'name' => $name,
             'max' => $maxShiftsPerWeek,
         ]);
     }

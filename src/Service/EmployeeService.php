@@ -61,8 +61,7 @@ class EmployeeService
         }
 
         $employeeId = $this->employees->create(
-            trim($data['first_name']),
-            trim($data['last_name']),
+            trim($data['name']),
             (int)$data['max_shifts_per_week']
         );
 
@@ -80,8 +79,7 @@ class EmployeeService
 
         $this->employees->update(
             $id,
-            trim($data['first_name']),
-            trim($data['last_name']),
+            trim($data['name']),
             (int)$data['max_shifts_per_week']
         );
 
@@ -121,10 +119,9 @@ class EmployeeService
     private function validate(array $data): array
     {
         $errors = [];
-        if (empty(trim($data['first_name'] ?? ''))) {
-            $errors[] = 'Vorname ist erforderlich.';
+        if (empty(trim($data['name'] ?? ''))) {
+            $errors[] = 'Name ist erforderlich.';
         }
-        // Nachname ist optional
         if (!isset($data['max_shifts_per_week']) || $data['max_shifts_per_week'] === '') {
             $errors[] = 'Anzahl Schichten pro Woche ist erforderlich.';
         } elseif (!is_numeric($data['max_shifts_per_week']) || (int)$data['max_shifts_per_week'] < 0) {

@@ -27,8 +27,7 @@ $weekdayShortNames = [
 ];
 
 $id = $employee['id'] ?? null;
-$firstName = $employee['first_name'] ?? '';
-$lastName = $employee['last_name'] ?? '';
+$name = $employee['name'] ?? '';
 $maxShiftsPerWeek = $employee['max_shifts_per_week'] ?? 5;
 $allowedWeekdays = isset($employee['allowed_weekdays']) ? (array)$employee['allowed_weekdays'] : [];
 $allowedShifts = isset($employee['allowed_shifts']) ? (array)$employee['allowed_shifts'] : [];
@@ -56,12 +55,8 @@ $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
 
 <form method="post" action="<?php echo htmlspecialchars($action, ENT_QUOTES, 'UTF-8'); ?>" id="employee-form">
     <div>
-        <label for="first_name">Vorname</label><br>
-        <input type="text" id="first_name" name="first_name" value="<?php echo htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8'); ?>">
-    </div>
-    <div>
-        <label for="last_name">Nachname</label><br>
-        <input type="text" id="last_name" name="last_name" value="<?php echo htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>">
+        <label for="name">Name</label><br>
+        <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>">
     </div>
     <div>
         <label for="max_shifts_per_week">Anz. Schichten/Woche</label><br>
@@ -160,10 +155,12 @@ $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
 </form>
 <script>
 document.getElementById('employee-form').addEventListener('submit', function(e) {
+    var name = document.getElementById('name');
     var weekdays = document.querySelectorAll('input[name="allowed_weekdays[]"]:checked');
     var shifts = document.querySelectorAll('input[name="allowed_shifts[]"]:checked');
     var roles = document.querySelectorAll('input[name="roles[]"]:checked');
     var msg = [];
+    if (!name.value.trim()) msg.push('Name ist erforderlich.');
     if (weekdays.length === 0) msg.push('Mindestens ein Wochentag muss ausgewählt werden.');
     if (shifts.length === 0) msg.push('Mindestens eine Schicht muss ausgewählt werden.');
     if (roles.length === 0) msg.push('Mindestens eine Rolle muss ausgewählt werden.');
