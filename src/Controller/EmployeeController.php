@@ -24,7 +24,7 @@ class EmployeeController
     {
         $formData = $this->service->getFormData();
         $content = $this->renderView('employees/form', [
-            'action' => '/employees/create',
+            'action' => BASE_PATH . '/employees/create',
             'employee' => $formData['employee'],
             'shifts' => $formData['shifts'],
             'roles' => $formData['roles'],
@@ -39,7 +39,7 @@ class EmployeeController
         if ($errors) {
             $formData = $this->service->getFormData();
             $content = $this->renderView('employees/form', [
-                'action' => '/employees/create',
+                'action' => BASE_PATH . '/employees/create',
                 'employee' => $_POST,
                 'shifts' => $formData['shifts'],
                 'roles' => $formData['roles'],
@@ -49,7 +49,7 @@ class EmployeeController
             return;
         }
 
-        header('Location: /employees');
+        header('Location: ' . BASE_PATH . '/employees');
         exit;
     }
 
@@ -64,7 +64,7 @@ class EmployeeController
         }
 
         $content = $this->renderView('employees/form', [
-            'action' => '/employees/edit?id=' . $id,
+            'action' => BASE_PATH . '/employees/edit?id=' . $id,
             'employee' => $formData['employee'],
             'shifts' => $formData['shifts'],
             'roles' => $formData['roles'],
@@ -81,7 +81,7 @@ class EmployeeController
             $formData = $this->service->getFormData($id);
             $employee = array_merge($formData['employee'] ?? [], $_POST);
             $content = $this->renderView('employees/form', [
-                'action' => '/employees/edit?id=' . $id,
+                'action' => BASE_PATH . '/employees/edit?id=' . $id,
                 'employee' => $employee,
                 'shifts' => $formData['shifts'],
                 'roles' => $formData['roles'],
@@ -91,7 +91,7 @@ class EmployeeController
             return;
         }
 
-        header('Location: /employees');
+        header('Location: ' . BASE_PATH . '/employees');
         exit;
     }
 
@@ -101,7 +101,7 @@ class EmployeeController
         if ($id > 0) {
             $this->service->delete($id);
         }
-        header('Location: /employees');
+        header('Location: ' . BASE_PATH . '/employees');
         exit;
     }
 

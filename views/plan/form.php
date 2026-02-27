@@ -22,7 +22,7 @@ $defaultStartStr = $defaultStart->format('Y-m-d');
     </div>
 <?php endif; ?>
 
-<form method="post" action="/plan/generate">
+<form method="post" action="<?= BASE_PATH ?>/plan/generate">
     <div>
         <label for="start_date">Startdatum (Montag empfohlen)</label><br>
         <input type="date" id="start_date" name="start_date" value="<?php echo htmlspecialchars($defaultStartStr, ENT_QUOTES, 'UTF-8'); ?>" required>
@@ -33,7 +33,7 @@ $defaultStartStr = $defaultStart->format('Y-m-d');
     </div>
     <div style="margin-top: 10px;">
         <button type="submit">Plan erzeugen</button>
-        <a href="/plan">Abbrechen</a>
+        <a href="<?= BASE_PATH ?>/plan">Abbrechen</a>
     </div>
 </form>
 

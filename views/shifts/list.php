@@ -15,7 +15,7 @@ $weekdayShort = [
 
 <h1>Schichten</h1>
 
-<p><a href="/shifts/create">Neue Schicht anlegen</a></p>
+<p><a href="<?= BASE_PATH ?>/shifts/create">Neue Schicht anlegen</a></p>
 
 <table>
     <thead>
@@ -48,8 +48,8 @@ $weekdayShort = [
             </td>
             <td><?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
             <td class="actions">
-                <a href="/shifts/edit?id=<?php echo (int)$shift['id']; ?>">Bearbeiten</a>
-                <form class="inline" method="post" action="/shifts/delete" onsubmit="return confirm('Schicht wirklich löschen?');">
+                <a href="<?= BASE_PATH ?>/shifts/edit?id=<?php echo (int)$shift['id']; ?>">Bearbeiten</a>
+                <form class="inline" method="post" action="<?= BASE_PATH ?>/shifts/delete" onsubmit="return confirm('Schicht wirklich löschen?');">
                     <input type="hidden" name="id" value="<?php echo (int)$shift['id']; ?>">
                     <button type="submit">Löschen</button>
                 </form>

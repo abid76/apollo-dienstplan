@@ -98,7 +98,7 @@ if ($timeToRaw !== '' && strpos((string)$timeToRaw, ':') !== false) {
     </div>
     <div style="margin-top: 10px;">
         <button type="submit">Speichern</button>
-        <a href="/shifts">Abbrechen</a>
+        <a href="<?= BASE_PATH ?>/shifts">Abbrechen</a>
     </div>
 </form>
 

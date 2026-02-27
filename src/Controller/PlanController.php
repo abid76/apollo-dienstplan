@@ -34,7 +34,7 @@ class PlanController
         if ($id > 0) {
             $this->service->deletePlan($id);
         }
-        header('Location: /plan');
+        header('Location: ' . BASE_PATH . '/plan');
         exit;
     }
 
@@ -61,7 +61,7 @@ class PlanController
 
         $planId = $this->service->generate($startDate, $weeks);
 
-        header('Location: /plan/show?id=' . $planId);
+        header('Location: ' . BASE_PATH . '/plan/show?id=' . $planId);
         exit;
     }
 

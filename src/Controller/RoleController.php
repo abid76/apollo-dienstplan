@@ -23,7 +23,7 @@ class RoleController
     public function create(): void
     {
         $content = $this->renderView('roles/form', [
-            'action' => '/roles/create',
+            'action' => BASE_PATH . '/roles/create',
             'role' => null,
             'errors' => [],
         ]);
@@ -35,14 +35,14 @@ class RoleController
         $errors = $this->service->create($_POST);
         if ($errors) {
             $content = $this->renderView('roles/form', [
-                'action' => '/roles/create',
+                'action' => BASE_PATH . '/roles/create',
                 'role' => $_POST,
                 'errors' => $errors,
             ]);
             $this->renderLayout($content);
             return;
         }
-        header('Location: /roles');
+        header('Location: ' . BASE_PATH . '/roles');
         exit;
     }
 
@@ -56,7 +56,7 @@ class RoleController
             return;
         }
         $content = $this->renderView('roles/form', [
-            'action' => '/roles/edit?id=' . $id,
+            'action' => BASE_PATH . '/roles/edit?id=' . $id,
             'role' => $role,
             'errors' => [],
         ]);
@@ -71,14 +71,14 @@ class RoleController
             $data = $_POST;
             $data['id'] = $id;
             $content = $this->renderView('roles/form', [
-                'action' => '/roles/edit?id=' . $id,
+                'action' => BASE_PATH . '/roles/edit?id=' . $id,
                 'role' => $data,
                 'errors' => $errors,
             ]);
             $this->renderLayout($content);
             return;
         }
-        header('Location: /roles');
+        header('Location: ' . BASE_PATH . '/roles');
         exit;
     }
 
@@ -88,7 +88,7 @@ class RoleController
         if ($id > 0) {
             $this->service->delete($id);
         }
-        header('Location: /roles');
+        header('Location: ' . BASE_PATH . '/roles');
         exit;
     }
 

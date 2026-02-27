@@ -88,7 +88,7 @@ $requiredCountExact = !empty($rule['required_count_exact']);
 
     <div style="margin-top: 10px;">
         <button type="submit">Speichern</button>
-        <a href="/rules">Abbrechen</a>
+        <a href="<?= BASE_PATH ?>/rules">Abbrechen</a>
     </div>
 </form>
 

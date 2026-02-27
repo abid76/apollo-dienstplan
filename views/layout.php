@@ -25,12 +25,12 @@
 <body>
     <header>
         <nav>
-            <a href="/">Übersicht</a>
-            <a href="/shifts">Schichten</a>
-            <a href="/roles">Rollen</a>
-            <a href="/employees">Mitarbeiter</a>
-            <a href="/rules">Regeln</a>
-            <a href="/plan">Dienstplan</a>
+            <a href="<?= BASE_PATH ?>/">Übersicht</a>
+            <a href="<?= BASE_PATH ?>/shifts">Schichten</a>
+            <a href="<?= BASE_PATH ?>/roles">Rollen</a>
+            <a href="<?= BASE_PATH ?>/employees">Mitarbeiter</a>
+            <a href="<?= BASE_PATH ?>/rules">Regeln</a>
+            <a href="<?= BASE_PATH ?>/plan">Dienstplan</a>
         </nav>
     </header>
     <main>

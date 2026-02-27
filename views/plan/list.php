@@ -13,7 +13,7 @@ function formatDateRange(string $startDate, int $weeks): string
 
 <h1>Dienstpläne</h1>
 
-<p><a href="/plan/create">Neuen Dienstplan erstellen</a></p>
+<p><a href="<?= BASE_PATH ?>/plan/create">Neuen Dienstplan erstellen</a></p>
 
 <?php if (empty($plans)): ?>
     <p>Noch keine Dienstpläne vorhanden.</p>
@@ -37,8 +37,8 @@ function formatDateRange(string $startDate, int $weeks): string
             <td><?php echo (int)$plan['weeks']; ?></td>
             <td><?php echo htmlspecialchars((new DateTime($plan['created_at']))->format('d.m.Y H:i'), ENT_QUOTES, 'UTF-8'); ?></td>
             <td class="actions">
-                <a href="/plan/show?id=<?php echo (int)$plan['id']; ?>">Anzeigen</a>
-                <form class="inline" method="post" action="/plan/delete" onsubmit="return confirm('Dienstplan wirklich löschen? Alle Einträge gehen verloren.');">
+                <a href="<?= BASE_PATH ?>/plan/show?id=<?php echo (int)$plan['id']; ?>">Anzeigen</a>
+                <form class="inline" method="post" action="<?= BASE_PATH ?>/plan/delete" onsubmit="return confirm('Dienstplan wirklich löschen? Alle Einträge gehen verloren.');">
                     <input type="hidden" name="id" value="<?php echo (int)$plan['id']; ?>">
                     <button type="submit">Löschen</button>
                 </form>

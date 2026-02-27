@@ -23,7 +23,7 @@ class ShiftController
     public function create(): void
     {
         $content = $this->renderView('shifts/form', [
-            'action' => '/shifts/create',
+            'action' => BASE_PATH . '/shifts/create',
             'shift' => null,
             'errors' => [],
         ]);
@@ -35,14 +35,14 @@ class ShiftController
         $errors = $this->service->create($_POST);
         if ($errors) {
             $content = $this->renderView('shifts/form', [
-                'action' => '/shifts/create',
+                'action' => BASE_PATH . '/shifts/create',
                 'shift' => $_POST,
                 'errors' => $errors,
             ]);
             $this->renderLayout($content);
             return;
         }
-        header('Location: /shifts');
+        header('Location: ' . BASE_PATH . '/shifts');
         exit;
     }
 
@@ -56,7 +56,7 @@ class ShiftController
             return;
         }
         $content = $this->renderView('shifts/form', [
-            'action' => '/shifts/edit?id=' . $id,
+            'action' => BASE_PATH . '/shifts/edit?id=' . $id,
             'shift' => $shift,
             'errors' => [],
         ]);
@@ -71,14 +71,14 @@ class ShiftController
             $data = $_POST;
             $data['id'] = $id;
             $content = $this->renderView('shifts/form', [
-                'action' => '/shifts/edit?id=' . $id,
+                'action' => BASE_PATH . '/shifts/edit?id=' . $id,
                 'shift' => $data,
                 'errors' => $errors,
             ]);
             $this->renderLayout($content);
             return;
         }
-        header('Location: /shifts');
+        header('Location: ' . BASE_PATH . '/shifts');
         exit;
     }
 
@@ -88,7 +88,7 @@ class ShiftController
         if ($id > 0) {
             $this->service->delete($id);
         }
-        header('Location: /shifts');
+        header('Location: ' . BASE_PATH . '/shifts');
         exit;
     }
 

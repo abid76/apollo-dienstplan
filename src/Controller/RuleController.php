@@ -24,7 +24,7 @@ class RuleController
     {
         $formData = $this->service->getFormData();
         $content = $this->renderView('rules/form', [
-            'action' => '/rules/create',
+            'action' => BASE_PATH . '/rules/create',
             'rule' => $formData['rule'],
             'shifts' => $formData['shifts'],
             'roles' => $formData['roles'],
@@ -39,7 +39,7 @@ class RuleController
         if ($errors) {
             $formData = $this->service->getFormData();
             $content = $this->renderView('rules/form', [
-                'action' => '/rules/create',
+                'action' => BASE_PATH . '/rules/create',
                 'rule' => $_POST,
                 'shifts' => $formData['shifts'],
                 'roles' => $formData['roles'],
@@ -49,7 +49,7 @@ class RuleController
             return;
         }
 
-        header('Location: /rules');
+        header('Location: ' . BASE_PATH . '/rules');
         exit;
     }
 
@@ -64,7 +64,7 @@ class RuleController
         }
 
         $content = $this->renderView('rules/form', [
-            'action' => '/rules/edit?id=' . $id,
+            'action' => BASE_PATH . '/rules/edit?id=' . $id,
             'rule' => $formData['rule'],
             'shifts' => $formData['shifts'],
             'roles' => $formData['roles'],
@@ -81,7 +81,7 @@ class RuleController
             $formData = $this->service->getFormData($id);
             $rule = array_merge($formData['rule'] ?? [], $_POST);
             $content = $this->renderView('rules/form', [
-                'action' => '/rules/edit?id=' . $id,
+                'action' => BASE_PATH . '/rules/edit?id=' . $id,
                 'rule' => $rule,
                 'shifts' => $formData['shifts'],
                 'roles' => $formData['roles'],
@@ -91,7 +91,7 @@ class RuleController
             return;
         }
 
-        header('Location: /rules');
+        header('Location: ' . BASE_PATH . '/rules');
         exit;
     }
 
@@ -101,7 +101,7 @@ class RuleController
         if ($id > 0) {
             $this->service->delete($id);
         }
-        header('Location: /rules');
+        header('Location: ' . BASE_PATH . '/rules');
         exit;
     }
 

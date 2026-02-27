@@ -1,0 +1,9 @@
+RewriteEngine On
+# Bei Deployment im Unterverzeichnis anpassen (z. B. /apollo-dienstplan/public/)
+# Im Root: RewriteBase /
+RewriteBase /apollo-dienstplan/public/
+
+# Nur weiterleiten, wenn keine echte Datei und kein Verzeichnis existiert (z. B. /shifts, /plan)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

@@ -6,7 +6,7 @@ $weekdayShort = [0 => 'Mo', 1 => 'Di', 2 => 'Mi', 3 => 'Do', 4 => 'Fr', 5 => 'Sa
 
 <h1>Mitarbeiter</h1>
 
-<p><a href="/employees/create">Neuen Mitarbeiter anlegen</a></p>
+<p><a href="<?= BASE_PATH ?>/employees/create">Neuen Mitarbeiter anlegen</a></p>
 
 <table>
     <thead>
@@ -39,8 +39,8 @@ $weekdayShort = [0 => 'Mo', 1 => 'Di', 2 => 'Mi', 3 => 'Do', 4 => 'Fr', 5 => 'Sa
             <td><?php echo htmlspecialchars(implode(', ', $labels), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo (int)$employee['max_shifts_per_week']; ?></td>
             <td class="actions">
-                <a href="/employees/edit?id=<?php echo (int)$employee['id']; ?>">Bearbeiten</a>
-                <form class="inline" method="post" action="/employees/delete" onsubmit="return confirm('Mitarbeiter wirklich löschen?');">
+                <a href="<?= BASE_PATH ?>/employees/edit?id=<?php echo (int)$employee['id']; ?>">Bearbeiten</a>
+                <form class="inline" method="post" action="<?= BASE_PATH ?>/employees/delete" onsubmit="return confirm('Mitarbeiter wirklich löschen?');">
                     <input type="hidden" name="id" value="<?php echo (int)$employee['id']; ?>">
                     <button type="submit">Löschen</button>
                 </form>

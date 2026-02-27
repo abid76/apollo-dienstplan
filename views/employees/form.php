@@ -150,6 +150,6 @@ $roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['rol
 
     <div style="margin-top: 10px;">
         <button type="submit">Speichern</button>
-        <a href="/employees">Abbrechen</a>
+        <a href="<?= BASE_PATH ?>/employees">Abbrechen</a>
     </div>
 </form>

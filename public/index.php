@@ -15,6 +15,9 @@ ini_set('display_errors', '1');
 $baseDir = dirname(__DIR__);
 require $baseDir . '/vendor/autoload.php';
 
+$config = require $baseDir . '/config/config.php';
+define('BASE_PATH', $config['base_path'] ?? '');
+
 spl_autoload_register(function (string $class) use ($baseDir): void {
     $prefix = 'App\\';
     $len = strlen($prefix);
@@ -76,6 +79,18 @@ $router->post('/plan/delete', [new PlanController(), 'delete']);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+// Bei Deployment in Unterverzeichnis: Basis-Prefix vom Pfad abziehen
+if (defined('BASE_PATH') && BASE_PATH !== '') {
+    if (strpos($path, BASE_PATH) === 0) {
+        $path = substr($path, strlen(BASE_PATH)) ?: '/';
+    }
+}
+
+// Apache DirectoryIndex: Aufruf als .../public/index.php → intern als "/" behandeln
+if ($path === '/index.php' || $path === '/index.php/') {
+    $path = '/';
+}
 
 $router->dispatch($method, $path);
 

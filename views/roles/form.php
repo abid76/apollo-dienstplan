@@ -31,7 +31,7 @@ $shortcode = $role['shortcode'] ?? '';
     </div>
     <div style="margin-top: 10px;">
         <button type="submit">Speichern</button>
-        <a href="/roles">Abbrechen</a>
+        <a href="<?= BASE_PATH ?>/roles">Abbrechen</a>
     </div>
 </form>
 

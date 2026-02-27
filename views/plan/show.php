@@ -136,5 +136,5 @@ foreach ($dates as $date) {
     </tfoot>
 </table>
 
-<p><a href="/plan">Zurück zur Übersicht</a> | <a href="/plan/create">Neuen Plan erstellen</a></p>
+<p><a href="<?= BASE_PATH ?>/plan">Zurück zur Übersicht</a> | <a href="<?= BASE_PATH ?>/plan/create">Neuen Plan erstellen</a></p>
 
