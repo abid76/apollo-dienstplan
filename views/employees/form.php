@@ -29,8 +29,8 @@ $weekdayShortNames = [
 $id = $employee['id'] ?? null;
 $name = $employee['name'] ?? '';
 $maxShiftsPerWeek = $employee['max_shifts_per_week'] ?? 5;
-$allowedWeekdays = isset($employee['allowed_weekdays']) ? (array)$employee['allowed_weekdays'] : [];
-$allowedShifts = isset($employee['allowed_shifts']) ? (array)$employee['allowed_shifts'] : [];
+$allowedWeekdays = isset($employee['allowed_weekdays']) ? array_map('intval', (array)$employee['allowed_weekdays']) : [];
+$allowedShifts = isset($employee['allowed_shifts']) ? array_map('intval', (array)$employee['allowed_shifts']) : [];
 $allowedWeekdayShifts = isset($employee['allowed_weekday_shifts']) ? (array)$employee['allowed_weekday_shifts'] : [];
 if (isset($employee['allowed_weekday_shift']) && is_array($employee['allowed_weekday_shift'])) {
     $allowedWeekdayShifts = [];
@@ -38,7 +38,7 @@ if (isset($employee['allowed_weekday_shift']) && is_array($employee['allowed_wee
         $allowedWeekdayShifts[(int)$wd] = array_map('intval', (array)$ids);
     }
 }
-$roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
+$roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['roles']) : [];
 ?>
 
 <h1><?php echo $id ? 'Mitarbeiter bearbeiten' : 'Neuen Mitarbeiter anlegen'; ?></h1>
