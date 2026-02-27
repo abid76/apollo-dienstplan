@@ -9,16 +9,17 @@
 <table>
     <thead>
     <tr>
-        <th>ID</th>
+        <th>#</th>
         <th>Bezeichnung</th>
         <th>Kürzel</th>
         <th>Aktionen</th>
     </tr>
     </thead>
     <tbody>
+    <?php $rowNumber = 1; ?>
     <?php foreach ($roles as $role): ?>
         <tr>
-            <td><?php echo (int)$role['id']; ?></td>
+            <td><?php echo $rowNumber++; ?></td>
             <td><?php echo htmlspecialchars($role['name'], ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars($role['shortcode'], ENT_QUOTES, 'UTF-8'); ?></td>
             <td class="actions">

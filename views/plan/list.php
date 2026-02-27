@@ -21,7 +21,7 @@ function formatDateRange(string $startDate, int $weeks): string
 <table>
     <thead>
     <tr>
-        <th>ID</th>
+        <th>#</th>
         <th>Zeitraum</th>
         <th>Wochen</th>
         <th>Erstellt am</th>
@@ -29,9 +29,10 @@ function formatDateRange(string $startDate, int $weeks): string
     </tr>
     </thead>
     <tbody>
+    <?php $rowNumber = 1; ?>
     <?php foreach ($plans as $plan): ?>
         <tr>
-            <td><?php echo (int)$plan['id']; ?></td>
+            <td><?php echo $rowNumber++; ?></td>
             <td><?php echo htmlspecialchars(formatDateRange($plan['start_date'], (int)$plan['weeks']), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo (int)$plan['weeks']; ?></td>
             <td><?php echo htmlspecialchars((new DateTime($plan['created_at']))->format('d.m.Y H:i'), ENT_QUOTES, 'UTF-8'); ?></td>

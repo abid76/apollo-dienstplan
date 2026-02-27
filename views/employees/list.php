@@ -11,7 +11,7 @@ $weekdayShort = [0 => 'Mo', 1 => 'Di', 2 => 'Mi', 3 => 'Do', 4 => 'Fr', 5 => 'Sa
 <table>
     <thead>
     <tr>
-        <th>ID</th>
+        <th>#</th>
         <th>Name</th>
         <th>Rollen</th>
         <th>Zulässige Wochentage</th>
@@ -20,6 +20,7 @@ $weekdayShort = [0 => 'Mo', 1 => 'Di', 2 => 'Mi', 3 => 'Do', 4 => 'Fr', 5 => 'Sa
     </tr>
     </thead>
     <tbody>
+    <?php $rowNumber = 1; ?>
     <?php foreach ($employees as $employee): ?>
         <?php
         $days = $employee['allowed_weekdays'] ?? [];
@@ -32,7 +33,7 @@ $weekdayShort = [0 => 'Mo', 1 => 'Di', 2 => 'Mi', 3 => 'Do', 4 => 'Fr', 5 => 'Sa
         }
         ?>
         <tr>
-            <td><?php echo (int)$employee['id']; ?></td>
+            <td><?php echo $rowNumber++; ?></td>
             <td><?php echo htmlspecialchars($employee['name'], ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars(implode(', ', $employee['role_shortcodes'] ?? []), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars(implode(', ', $labels), ENT_QUOTES, 'UTF-8'); ?></td>

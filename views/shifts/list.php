@@ -20,7 +20,7 @@ $weekdayShort = [
 <table>
     <thead>
     <tr>
-        <th>ID</th>
+        <th>#</th>
         <th>Name</th>
         <th>Wochentag</th>
         <th>Uhrzeit</th>
@@ -28,9 +28,10 @@ $weekdayShort = [
     </tr>
     </thead>
     <tbody>
+    <?php $rowNumber = 1; ?>
     <?php foreach ($shifts as $shift): ?>
         <tr>
-            <td><?php echo (int)$shift['id']; ?></td>
+            <td><?php echo $rowNumber++; ?></td>
             <td><?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?></td>
             <td>
                 <?php
