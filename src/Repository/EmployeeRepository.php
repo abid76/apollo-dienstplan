@@ -67,6 +67,28 @@ class EmployeeRepository
         return $row ?: null;
     }
 
+    public function nameExists(string $name, ?int $excludeId = null): bool
+    {
+        if ($excludeId !== null) {
+            $stmt = $this->db->prepare(
+                'SELECT id FROM employee WHERE name = :name AND id <> :id LIMIT 1'
+            );
+            $stmt->execute([
+                'name' => $name,
+                'id' => $excludeId,
+            ]);
+        } else {
+            $stmt = $this->db->prepare(
+                'SELECT id FROM employee WHERE name = :name LIMIT 1'
+            );
+            $stmt->execute([
+                'name' => $name,
+            ]);
+        }
+
+        return (bool)$stmt->fetchColumn();
+    }
+
     public function create(string $name, int $maxShiftsPerWeek): int
     {
         $stmt = $this->db->prepare(

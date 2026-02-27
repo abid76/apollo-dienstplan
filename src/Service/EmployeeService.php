@@ -55,7 +55,7 @@ class EmployeeService
 
     public function create(array $data): array
     {
-        $errors = $this->validate($data);
+        $errors = $this->validate($data, null);
         if ($errors) {
             return $errors;
         }
@@ -72,7 +72,7 @@ class EmployeeService
 
     public function update(int $id, array $data): array
     {
-        $errors = $this->validate($data);
+        $errors = $this->validate($data, $id);
         if ($errors) {
             return $errors;
         }
@@ -116,11 +116,14 @@ class EmployeeService
         $this->employees->setRoles($employeeId, $roles);
     }
 
-    private function validate(array $data): array
+    private function validate(array $data, ?int $currentId = null): array
     {
         $errors = [];
-        if (empty(trim($data['name'] ?? ''))) {
+        $name = trim($data['name'] ?? '');
+        if ($name === '') {
             $errors[] = 'Name ist erforderlich.';
+        } elseif ($this->employees->nameExists($name, $currentId)) {
+            $errors[] = 'Ein Mitarbeiter mit diesem Namen existiert bereits.';
         }
         if (!isset($data['max_shifts_per_week']) || $data['max_shifts_per_week'] === '') {
             $errors[] = 'Anzahl Schichten pro Woche ist erforderlich.';

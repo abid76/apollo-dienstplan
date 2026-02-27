@@ -153,21 +153,3 @@ $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
         <a href="/employees">Abbrechen</a>
     </div>
 </form>
-<script>
-document.getElementById('employee-form').addEventListener('submit', function(e) {
-    var name = document.getElementById('name');
-    var weekdays = document.querySelectorAll('input[name="allowed_weekdays[]"]:checked');
-    var shifts = document.querySelectorAll('input[name="allowed_shifts[]"]:checked');
-    var roles = document.querySelectorAll('input[name="roles[]"]:checked');
-    var msg = [];
-    if (!name.value.trim()) msg.push('Name ist erforderlich.');
-    if (weekdays.length === 0) msg.push('Mindestens ein Wochentag muss ausgewählt werden.');
-    if (shifts.length === 0) msg.push('Mindestens eine Schicht muss ausgewählt werden.');
-    if (roles.length === 0) msg.push('Mindestens eine Rolle muss ausgewählt werden.');
-    if (msg.length) {
-        e.preventDefault();
-        alert(msg.join('\n'));
-    }
-});
-</script>
-
