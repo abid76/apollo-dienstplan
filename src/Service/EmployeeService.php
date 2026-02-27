@@ -33,6 +33,7 @@ class EmployeeService
 
         $employee['allowed_weekdays'] = $this->employees->getAllowedWeekdays($id);
         $employee['allowed_shifts'] = $this->employees->getAllowedShifts($id);
+        $employee['allowed_weekday_shifts'] = $this->employees->getAllowedWeekdayShifts($id);
         $employee['roles'] = $this->employees->getRoles($id);
 
         return $employee;
@@ -102,6 +103,18 @@ class EmployeeService
 
         $this->employees->setAllowedWeekdays($employeeId, $weekdays);
         $this->employees->setAllowedShifts($employeeId, $shifts);
+
+        $weekdayShifts = [];
+        if (isset($data['allowed_weekday_shift']) && is_array($data['allowed_weekday_shift'])) {
+            foreach ($data['allowed_weekday_shift'] as $weekday => $shiftIds) {
+                $shiftIds = array_filter((array)$shiftIds);
+                if (!empty($shiftIds)) {
+                    $weekdayShifts[(int)$weekday] = array_map('intval', $shiftIds);
+                }
+            }
+        }
+        $this->employees->setAllowedWeekdayShifts($employeeId, $weekdayShifts);
+
         $this->employees->setRoles($employeeId, $roles);
     }
 

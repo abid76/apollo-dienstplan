@@ -158,6 +158,47 @@ class EmployeeRepository
         }
     }
 
+    /**
+     * Pro Wochentag die erlaubten Schicht-IDs (Einschränkung).
+     * Rückgabe: [weekday => [shift_id, ...], ...]. Leeres Array für einen Tag = keine Einschränkung.
+     */
+    public function getAllowedWeekdayShifts(int $employeeId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT weekday, shift_id FROM employee_allowed_weekday_shift WHERE employee_id = :id ORDER BY weekday, shift_id'
+        );
+        $stmt->execute(['id' => $employeeId]);
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $wd = (int)$row['weekday'];
+            $result[$wd][] = (int)$row['shift_id'];
+        }
+        return $result;
+    }
+
+    /**
+     * @param array<int, array<int>> $weekdayShifts [weekday => [shift_id, ...], ...]. Nur Einträge mit nicht-leerer Liste werden gespeichert.
+     */
+    public function setAllowedWeekdayShifts(int $employeeId, array $weekdayShifts): void
+    {
+        $this->db->prepare('DELETE FROM employee_allowed_weekday_shift WHERE employee_id = :id')
+            ->execute(['id' => $employeeId]);
+
+        $stmt = $this->db->prepare(
+            'INSERT INTO employee_allowed_weekday_shift (employee_id, weekday, shift_id) VALUES (:employee_id, :weekday, :shift_id)'
+        );
+        foreach ($weekdayShifts as $weekday => $shiftIds) {
+            $shiftIds = array_filter(array_map('intval', (array)$shiftIds));
+            foreach ($shiftIds as $shiftId) {
+                $stmt->execute([
+                    'employee_id' => $employeeId,
+                    'weekday' => (int)$weekday,
+                    'shift_id' => $shiftId,
+                ]);
+            }
+        }
+    }
+
     public function getRoles(int $employeeId): array
     {
         $stmt = $this->db->prepare(

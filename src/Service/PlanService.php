@@ -69,11 +69,14 @@ class PlanService
                     foreach ($employees as $employee) {
                         $employeeId = (int)$employee['id'];
 
-                        if (
-                            !in_array($weekday, $employee['allowed_weekdays'], true) ||
-                            !in_array((int)$shift['id'], $employee['allowed_shifts'], true) ||
+                        if (!in_array($weekday, $employee['allowed_weekdays'], true) ||
                             !in_array($roleId, $employee['roles'], true)
                         ) {
+                            continue;
+                        }
+                        $allowedShiftsToday = $employee['allowed_weekday_shifts'][$weekday] ?? [];
+                        $shiftsForDay = (!empty($allowedShiftsToday)) ? $allowedShiftsToday : $employee['allowed_shifts'];
+                        if (!in_array((int)$shift['id'], $shiftsForDay, true)) {
                             continue;
                         }
 
@@ -128,8 +131,9 @@ class PlanService
 
             foreach ($employees as $employee) {
                 $employeeId = (int)$employee['id'];
-                // Zulässige Schichten auswählen
-                $shifts = $employee['allowed_shifts'];
+                // Zulässige Schichten an diesem Wochentag (Einschränkung Wochentag/Schicht)
+                $allowedShiftsToday = $employee['allowed_weekday_shifts'][$weekday] ?? [];
+                $shifts = (!empty($allowedShiftsToday)) ? $allowedShiftsToday : $employee['allowed_shifts'];
                 foreach ($shifts as $shiftId) {
 
                     // Wenn der Mitarbeiter bereits an diesem Tag besetzt ist, überspringen
@@ -243,6 +247,7 @@ class PlanService
             $id = (int)$employee['id'];
             $employee['allowed_weekdays'] = $this->employees->getAllowedWeekdays($id);
             $employee['allowed_shifts'] = $this->employees->getAllowedShifts($id);
+            $employee['allowed_weekday_shifts'] = $this->employees->getAllowedWeekdayShifts($id);
             $employee['roles'] = $this->employees->getRoles($id);
             $result[] = $employee;
         }

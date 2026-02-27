@@ -32,6 +32,13 @@ $lastName = $employee['last_name'] ?? '';
 $maxShiftsPerWeek = $employee['max_shifts_per_week'] ?? 5;
 $allowedWeekdays = isset($employee['allowed_weekdays']) ? (array)$employee['allowed_weekdays'] : [];
 $allowedShifts = isset($employee['allowed_shifts']) ? (array)$employee['allowed_shifts'] : [];
+$allowedWeekdayShifts = isset($employee['allowed_weekday_shifts']) ? (array)$employee['allowed_weekday_shifts'] : [];
+if (isset($employee['allowed_weekday_shift']) && is_array($employee['allowed_weekday_shift'])) {
+    $allowedWeekdayShifts = [];
+    foreach ($employee['allowed_weekday_shift'] as $wd => $ids) {
+        $allowedWeekdayShifts[(int)$wd] = array_map('intval', (array)$ids);
+    }
+}
 $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
 ?>
 
@@ -92,6 +99,47 @@ $roleIds = isset($employee['roles']) ? (array)$employee['roles'] : [];
                 <?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)
             </label><br>
         <?php endforeach; ?>
+    </fieldset>
+
+    <fieldset>
+        <legend>Einschränkung Wochentage/Schichten</legend>
+        <p class="hint">Optional: Pro Wochentag können Sie die zulässigen Schichten einschränken. Keine Auswahl = an diesem Tag sind alle oben gewählten Schichten erlaubt.</p>
+        <?php
+        $showRestriction = !empty($allowedWeekdays) && !empty($allowedShifts);
+        if ($showRestriction):
+            foreach ($weekdayNames as $wdValue => $wdLabel):
+                if (!in_array($wdValue, $allowedWeekdays, true)) {
+                    continue;
+                }
+                $shiftsForDay = $allowedWeekdayShifts[$wdValue] ?? [];
+        ?>
+        <div style="margin-bottom: 0.75em;">
+            <strong><?php echo htmlspecialchars($wdLabel, ENT_QUOTES, 'UTF-8'); ?></strong>:<br>
+            <?php foreach ($shifts as $shift): ?>
+                <?php if (!in_array((int)$shift['id'], $allowedShifts, true)) continue; ?>
+                <?php
+                $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                $weekdays = array_map('intval', (array)$weekdays);
+                if (!in_array($wdValue, $weekdays, true)) continue;
+                $weekdayLabels = [];
+                foreach ($weekdays as $day) {
+                    if (isset($weekdayShortNames[$day])) {
+                        $weekdayLabels[] = $weekdayShortNames[$day];
+                    }
+                }
+                ?>
+                <label style="margin-left: 1em;">
+                    <input type="checkbox" name="allowed_weekday_shift[<?php echo (int)$wdValue; ?>][]" value="<?php echo (int)$shift['id']; ?>" <?php echo in_array((int)$shift['id'], $shiftsForDay, true) ? 'checked' : ''; ?>>
+                    <?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?>
+                    (<?php echo htmlspecialchars(implode(', ', $weekdayLabels), ENT_QUOTES, 'UTF-8'); ?>, <?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)
+                </label><br>
+            <?php endforeach; ?>
+        </div>
+        <?php
+            endforeach;
+        else: ?>
+        <p class="hint">Bitte zuerst „Zulässige Wochentage“ und „Zulässige Schichten“ wählen.</p>
+        <?php endif; ?>
     </fieldset>
 
     <fieldset>
