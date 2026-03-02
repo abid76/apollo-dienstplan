@@ -30,7 +30,17 @@ $id = $employee['id'] ?? null;
 $name = $employee['name'] ?? '';
 $maxShiftsPerWeek = $employee['max_shifts_per_week'] ?? 5;
 $allowedWeekdays = isset($employee['allowed_weekdays']) ? array_map('intval', (array)$employee['allowed_weekdays']) : [];
-$allowedShifts = isset($employee['allowed_shifts']) ? array_map('intval', (array)$employee['allowed_shifts']) : [];
+$allowedShifts = [];
+$allowedShiftMaxPerWeek = [];
+if (isset($employee['allowed_shifts']) && is_array($employee['allowed_shifts'])) {
+    foreach ($employee['allowed_shifts'] as $a) {
+        $sid = (int)(is_array($a) ? ($a['shift_id'] ?? 0) : $a);
+        $allowedShifts[] = $sid;
+        if (is_array($a) && array_key_exists('max_per_week', $a) && $a['max_per_week'] !== null && $a['max_per_week'] !== '') {
+            $allowedShiftMaxPerWeek[$sid] = (int)$a['max_per_week'];
+        }
+    }
+}
 $allowedWeekdayShifts = isset($employee['allowed_weekday_shifts']) ? (array)$employee['allowed_weekday_shifts'] : [];
 if (isset($employee['allowed_weekday_shift']) && is_array($employee['allowed_weekday_shift'])) {
     $allowedWeekdayShifts = [];
@@ -92,6 +102,15 @@ $roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['rol
                 <?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?>
                 (<?php echo htmlspecialchars(implode(', ', $weekdayLabels), ENT_QUOTES, 'UTF-8'); ?>,
                 <?php echo htmlspecialchars(formatTimeRange($shift['time_from'] ?? '', $shift['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?>)
+                <span class="hint">Max. pro Woche:</span>
+                <select name="allowed_shift_max_per_week[<?php echo (int)$shift['id']; ?>]" style="width: 4.5em;">
+                    <option value=""<?php echo !isset($allowedShiftMaxPerWeek[(int)$shift['id']]) ? ' selected' : ''; ?>>—</option>
+                    <?php for ($i = 1; $i <= 7; $i++): ?>
+                        <option value="<?php echo $i; ?>"<?php echo (isset($allowedShiftMaxPerWeek[(int)$shift['id']]) && (int)$allowedShiftMaxPerWeek[(int)$shift['id']] === $i) ? ' selected' : ''; ?>>
+                            <?php echo $i; ?>
+                        </option>
+                    <?php endfor; ?>
+                </select>
             </label><br>
         <?php endforeach; ?>
     </fieldset>

@@ -41,6 +41,7 @@ class PlanService
         $totalDays = $weeks * 7;
 
         $assignmentsPerWeek = [];
+        $assignmentsPerEmployeeShiftPerWeek = [];
         $assignedPerDay = [];
 
         $completeShiftRoleAssignment = [];
@@ -96,8 +97,22 @@ class PlanService
                                 continue;
                             }
                             $allowedShifts = $employee['allowed_shifts'] ?? [];
-                            if (!in_array($shiftId, $allowedShifts, true)) {
+                            $allowedShiftIds = array_column($allowedShifts, 'shift_id');
+                            if (!in_array($shiftId, $allowedShiftIds, true)) {
                                 continue;
+                            }
+                            $maxThisShiftPerWeek = null;
+                            foreach ($allowedShifts as $a) {
+                                if ((int)$a['shift_id'] === $shiftId) {
+                                    $maxThisShiftPerWeek = $a['max_per_week'] ?? null;
+                                    break;
+                                }
+                            }
+                            if ($maxThisShiftPerWeek !== null) {
+                                $countThisShift = $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0;
+                                if ($countThisShift >= $maxThisShiftPerWeek) {
+                                    continue;
+                                }
                             }
                             $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
                             if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
@@ -116,10 +131,6 @@ class PlanService
 
                         if (!$candidates) {
                             continue;
-                        }
-
-                        if ($dateString === '2026-03-02' && $roleId == 1) {
-                            error_log("candidates: " . json_encode($candidates));
                         }
 
                         // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
@@ -142,6 +153,8 @@ class PlanService
                         foreach ($selected as $employeeId) {
                             $assignmentsPerWeek[$employeeId][$weekIndex] =
                                 ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                            $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
+                                ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                             $assignedPerDay[$dateString][$employeeId] = $roleId;
                             $remainingEmployeeShifts[$employeeId]--;
                             if ($rule['required_count_exact'] === 1) {
@@ -209,8 +222,22 @@ class PlanService
                                     continue;
                                 }
                                 $allowedShifts = $employee['allowed_shifts'] ?? [];
-                                if (!in_array($shiftId, $allowedShifts, true)) {
+                                $allowedShiftIds = array_column($allowedShifts, 'shift_id');
+                                if (!in_array($shiftId, $allowedShiftIds, true)) {
                                     continue;
+                                }
+                                $maxThisShiftPerWeek = null;
+                                foreach ($allowedShifts as $a) {
+                                    if ((int)$a['shift_id'] === $shiftId) {
+                                        $maxThisShiftPerWeek = $a['max_per_week'] ?? null;
+                                        break;
+                                    }
+                                }
+                                if ($maxThisShiftPerWeek !== null) {
+                                    $countThisShift = $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0;
+                                    if ($countThisShift >= $maxThisShiftPerWeek) {
+                                        continue;
+                                    }
                                 }
                                 $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
                                 if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
@@ -262,6 +289,8 @@ class PlanService
                             foreach ($selected as $employeeId) {
                                 $assignmentsPerWeek[$employeeId][$weekIndex] =
                                     ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                                $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
+                                    ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                                 $assignedPerDay[$dateString][$employeeId] = $roleId;
                                 $remainingEmployeeShifts[$employeeId]--;
                                 $this->plans->addEntry(

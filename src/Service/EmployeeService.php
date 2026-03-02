@@ -96,8 +96,17 @@ class EmployeeService
     private function updateRelations(int $employeeId, array $data): void
     {
         $weekdays = isset($data['allowed_weekdays']) ? (array)$data['allowed_weekdays'] : [];
-        $shifts = isset($data['allowed_shifts']) ? (array)$data['allowed_shifts'] : [];
+        $rawShifts = isset($data['allowed_shifts']) ? (array)$data['allowed_shifts'] : [];
         $roles = isset($data['roles']) ? (array)$data['roles'] : [];
+
+        $shifts = [];
+        $maxPerWeekByShift = $data['allowed_shift_max_per_week'] ?? [];
+        foreach ($rawShifts as $shiftId) {
+            $shiftId = (int)$shiftId;
+            $maxPerWeek = isset($maxPerWeekByShift[$shiftId]) && $maxPerWeekByShift[$shiftId] !== ''
+                ? (int)$maxPerWeekByShift[$shiftId] : null;
+            $shifts[] = ['shift_id' => $shiftId, 'max_per_week' => $maxPerWeek];
+        }
 
         $this->employees->setAllowedWeekdays($employeeId, $weekdays);
         $this->employees->setAllowedShifts($employeeId, $shifts);
@@ -139,6 +148,15 @@ class EmployeeService
         $shifts = $data['allowed_shifts'] ?? [];
         if (empty($shifts) || !is_array($shifts)) {
             $errors[] = 'Mindestens eine Schicht muss ausgewählt werden.';
+        }
+        $maxPerWeek = $data['allowed_shift_max_per_week'] ?? [];
+        if (is_array($maxPerWeek)) {
+            foreach ($maxPerWeek as $sid => $val) {
+                if ($val !== '' && $val !== null && (!is_numeric($val) || (int)$val < 0)) {
+                    $errors[] = 'Max. Schichten pro Woche muss eine nichtnegative Zahl sein.';
+                    break;
+                }
+            }
         }
 
         $roles = $data['roles'] ?? [];

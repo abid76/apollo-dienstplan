@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS employee_allowed_weekday (
 CREATE TABLE IF NOT EXISTS employee_allowed_shift (
   employee_id INT UNSIGNED NOT NULL,
   shift_id INT UNSIGNED NOT NULL,
+  max_per_week TINYINT UNSIGNED NULL COMMENT 'Max. Anzahl dieser Schicht pro Woche (NULL = unbegrenzt)',
   PRIMARY KEY (employee_id, shift_id),
   CONSTRAINT fk_eas_employee
     FOREIGN KEY (employee_id) REFERENCES employee (id)

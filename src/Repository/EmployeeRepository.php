@@ -149,31 +149,59 @@ class EmployeeRepository
         }
     }
 
+    /**
+     * Liefert die erlaubten Schichten mit optionalem max_per_week.
+     *
+     * @return list<array{shift_id: int, max_per_week: ?int}>
+     */
     public function getAllowedShifts(int $employeeId): array
     {
         $stmt = $this->db->prepare(
-            'SELECT shift_id FROM employee_allowed_shift WHERE employee_id = :id ORDER BY shift_id'
+            'SELECT shift_id, max_per_week FROM employee_allowed_shift WHERE employee_id = :id ORDER BY shift_id'
         );
         $stmt->execute(['id' => $employeeId]);
-        return array_map('intval', array_column($stmt->fetchAll(), 'shift_id'));
+        $result = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $result[] = [
+                'shift_id' => (int)$row['shift_id'],
+                'max_per_week' => isset($row['max_per_week']) && $row['max_per_week'] !== null
+                    ? (int)$row['max_per_week'] : null,
+            ];
+        }
+        return $result;
     }
 
-    public function setAllowedShifts(int $employeeId, array $shiftIds): void
+    /**
+     * Speichert die erlaubten Schichten. Jedes Element von $shifts ist entweder eine shift_id (int)
+     * oder ein Array mit 'shift_id' und optional 'max_per_week' (?int).
+     *
+     * @param array<int|array{shift_id: int, max_per_week?: ?int}> $shifts
+     */
+    public function setAllowedShifts(int $employeeId, array $shifts): void
     {
         $this->db->prepare('DELETE FROM employee_allowed_shift WHERE employee_id = :id')
             ->execute(['id' => $employeeId]);
 
-        if (!$shiftIds) {
+        if (!$shifts) {
             return;
         }
 
         $stmt = $this->db->prepare(
-            'INSERT INTO employee_allowed_shift (employee_id, shift_id) VALUES (:employee_id, :shift_id)'
+            'INSERT INTO employee_allowed_shift (employee_id, shift_id, max_per_week) VALUES (:employee_id, :shift_id, :max_per_week)'
         );
-        foreach ($shiftIds as $shiftId) {
+        foreach ($shifts as $entry) {
+            if (is_array($entry)) {
+                $shiftId = (int)($entry['shift_id'] ?? 0);
+                $maxPerWeek = array_key_exists('max_per_week', $entry) && $entry['max_per_week'] !== '' && $entry['max_per_week'] !== null
+                    ? (int)$entry['max_per_week'] : null;
+            } else {
+                $shiftId = (int)$entry;
+                $maxPerWeek = null;
+            }
             $stmt->execute([
                 'employee_id' => $employeeId,
-                'shift_id' => (int)$shiftId,
+                'shift_id' => $shiftId,
+                'max_per_week' => $maxPerWeek,
             ]);
         }
     }
