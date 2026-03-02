@@ -46,6 +46,17 @@ class PlanService
         $completeShiftRoleAssignment = [];
 
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+
+            $prevWeekOffset = 7 + $weekIndex * 7;
+            $prevWeekStart = $start->modify("-{$prevWeekOffset} days")->format('Y-m-d');
+            $prevPlan = $this->plans->findByStartDate($prevWeekStart);
+            if ($prevPlan !== null) {
+                $prevEntries = $this->plans->getEntriesWithDetails((int)$prevPlan['id']);
+                foreach ($prevEntries as $entry) {
+                    $assignedPerDay[$entry['date']][(int)$entry['employee_id']] = (int)$entry['role_id'];
+                }
+            }
+
             $remainingEmployeeShifts = [];
             foreach ($employees as $employee) {
                 $remainingEmployeeShifts[(int)$employee['id']] = (int)$employee['max_shifts_per_week'];
@@ -107,11 +118,23 @@ class PlanService
                             continue;
                         }
 
+                        if ($dateString === '2026-03-02' && $roleId == 1) {
+                            error_log("candidates: " . json_encode($candidates));
+                        }
+
                         // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
                         // damit Kapazität (Anz. Schichten/Woche) genutzt wird
-                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex) {
+                        $randomOrder = range(0, max(array_column($employees, 'id')) ?: 0);
+                        shuffle($randomOrder); // Zufälligkeit für den Fall, dass die Anzahl der Einsätze gleich ist
+                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder) {
+
                             $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
                             $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
+
+                            if ($ca === $cb) {
+                                return ($randomOrder[$a] <=> $randomOrder[$b]);
+                            }
+
                             return $ca <=> $cb;
                         });
                         $selected = array_slice($candidates, 0, $requiredCount);
@@ -210,7 +233,9 @@ class PlanService
 
                             // Mindestanzahl besetzen; Kandidaten mit wenigsten Einsätzen zuerst wählen,
                             // damit Kapazität (Anz. Schichten/Woche) genutzt wird
-                            usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $dateString, $assignedPerDay) {
+                            $randomOrder = range(0, max(array_column($employees, 'id')) ?: 0);
+                            shuffle($randomOrder); // Zufälligkeit für den Fall, dass die Anzahl der Einsätze gleich ist
+                            usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $dateString, $assignedPerDay, $randomOrder) {
                                 if ($weekIndex > 0) {
                                     // Falls der Mitarbeiter $a an diesem Tag der letzten Woche bereits hinzugefügt wurde,
                                     // Mitarbeiter $b aber nicht, gewinnt Mitarbeiter $b.
@@ -227,6 +252,9 @@ class PlanService
 
                                 $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
                                 $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
+                                if ($ca === $cb) {
+                                    return ($randomOrder[$a] <=> $randomOrder[$b]);
+                                }
                                 return $ca <=> $cb;
                             });
                             $selected = array_slice($candidates, 0, 1);

@@ -64,6 +64,19 @@ class PlanRepository
         return $row ?: null;
     }
 
+    /**
+     * Plan mit dem angegebenen Startdatum (z. B. Vorwoche). Bei mehreren Treffern der neueste.
+     */
+    public function findByStartDate(string $startDate): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM plan WHERE start_date = :start_date ORDER BY id DESC LIMIT 1'
+        );
+        $stmt->execute(['start_date' => $startDate]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function delete(int $id): void
     {
         $stmt = $this->db->prepare('DELETE FROM plan WHERE id = :id');
