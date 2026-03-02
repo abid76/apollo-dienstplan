@@ -63,7 +63,8 @@ foreach ($dates as $date) {
 </p>
 
 <style>.plan-table th:first-child,
-.plan-table td:first-child { white-space: nowrap; }</style>
+.plan-table td:first-child { white-space: nowrap; }
+.plan-table tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }</style>
 <table class="plan-table">
     <thead>
     <tr>
