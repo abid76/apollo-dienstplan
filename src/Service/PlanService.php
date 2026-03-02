@@ -184,7 +184,14 @@ class PlanService
             // Wir iterieren über alle Wochentage und Schichten und fügen nach und nach jeweils ein Mitarbeiter hinzu
             // Dies tun wir solange, bis alle Mitarbeiter auf alle Schichten verteilt sind
             // Durch das tageweise hinzufügen eines einzelnen Mitarbeiters werden die Wochentage halbwegs gleichmäßig besetzt
-            while (max($remainingEmployeeShifts) > 0) {
+            $maxIterations = 1000;
+            $iterations = 0;
+            while (max($remainingEmployeeShifts) > 0 && $iterations < $maxIterations) {
+                $iterations++;
+                if ($iterations > $maxIterations) {
+                    throw new \Exception("Maximale Anzahl an Iterationen erreicht. Mitarbeiter nicht vollständig verteilt.");
+                    break;
+                }
                 for ($weekday = 0; $weekday < 7; $weekday++) {
                     $dayIndex = $weekIndex * 7 + $weekday;
                     $date = $start->modify("+{$dayIndex} day");
