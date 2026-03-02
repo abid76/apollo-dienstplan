@@ -46,6 +46,8 @@ class PlanController
 
         if (!$startDate) {
             $errors[] = 'Startdatum ist erforderlich.';
+        } elseif ((new \DateTime($startDate))->format('N') !== '1') {
+            $errors[] = 'Das Startdatum muss ein Montag sein.';
         }
         if ($weeks < 1) {
             $errors[] = 'Anzahl Wochen muss mindestens 1 sein.';
@@ -54,6 +56,8 @@ class PlanController
         if ($errors) {
             $content = $this->renderView('plan/form', [
                 'errors' => $errors,
+                'submitted_start_date' => $startDate,
+                'submitted_weeks' => $weeks,
             ]);
             $this->renderLayout($content);
             return;
