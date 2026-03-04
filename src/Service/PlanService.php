@@ -119,17 +119,39 @@ class PlanService
                         // damit Kapazität (Anz. Schichten/Woche) genutzt wird
                         $randomOrder = range(0, max(array_column($employees, 'id')) ?: 0);
                         shuffle($randomOrder); // Zufälligkeit für den Fall, dass die Anzahl der Einsätze gleich ist
-                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder) {
+                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder, $employees, $actualWeekday, $shiftId) {
 
                             $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
                             $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
 
                             if ($ca === $cb) {
+                                // Falls ein Mitarbeiter an diesem Tag auf diese Schicht eingeschränkt ist (Eintrag in employee_allowed_weekday_shift)
+                                // Dann wird der Mitarbeiter mit der kleinsten Anzahl an Schichten für diesen Tag bevorzugt.
+                                // Gedanke: Wenn ein Mitarbeiter nur an diesem Tag nur eine bestimmte Schicht machen kann, dann soll er sie bekommen.
+                                // $employeeA = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $a))[0] ?? null;
+                                // $employeeB = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $b))[0] ?? null;
+                                // $aPref = 0;
+                                // $bPref = 0;
+                                // if (!empty($employeeA['allowed_weekday_shifts']) && 
+                                //     array_key_exists($actualWeekday, $employeeA['allowed_weekday_shifts']) && 
+                                //     in_array($shiftId, $employeeA['allowed_weekday_shifts'][$actualWeekday], true)) {
+                                //     $aPref = PHP_INT_MIN + count($employeeA['allowed_weekday_shifts'][$actualWeekday]);
+                                // }
+                                // if (!empty($employeeB['allowed_weekday_shifts']) && 
+                                //     array_key_exists($actualWeekday, $employeeB['allowed_weekday_shifts']) && 
+                                //     in_array($shiftId, $employeeB['allowed_weekday_shifts'][$actualWeekday], true)) {
+                                //     $bPref = PHP_INT_MIN + count($employeeB['allowed_weekday_shifts'][$actualWeekday]);
+                                // }
+
+                                // if ($aPref !== $bPref) {
+                                //     return ($aPref <=> $bPref);
+                                // }
                                 return ($randomOrder[$a] <=> $randomOrder[$b]);
                             }
 
                             return $ca <=> $cb;
                         });
+
                         $selected = array_slice($candidates, 0, $requiredCount);
 
                         foreach ($selected as $employeeId) {
@@ -181,6 +203,9 @@ class PlanService
 
                 foreach ($shiftRules as $rule) {
                     $roleId = (int)$rule['role_id'];
+                    if ($completeShiftRoleAssignment[$dateString][$shiftId][$roleId] ?? false) {
+                        continue;
+                    }
                     $requiredCount = (int)$rule['required_count'];
 
                     foreach ($employees as $employee) {
@@ -322,6 +347,9 @@ class PlanService
                                     ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                                 $assignedPerDay[$dateString][$employeeId] = $roleId;
                                 $remainingEmployeeShifts[$employeeId]--;
+                                if ($rule['required_count_exact'] === 1) {
+                                    $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
+                                }
                                 $this->plans->addEntry(
                                     $planId,
                                     $dateString,

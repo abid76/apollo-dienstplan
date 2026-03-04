@@ -11,7 +11,8 @@ if ($defaultStart < new DateTime('today')) {
 }
 $defaultStartStr = $defaultStart->format('Y-m-d');
 $startDateValue = $submitted_start_date ?? $defaultStartStr;
-$weeksValue = $submitted_weeks ?? 1;
+$serverIsLocalhost = isset($_SERVER['SERVER_NAME']) && ($_SERVER['SERVER_NAME'] === 'localhost');
+$weeksValue = $submitted_weeks ?? ($serverIsLocalhost ? 1 : 4);
 ?>
 
 <h1>Dienstplan erstellen</h1>
