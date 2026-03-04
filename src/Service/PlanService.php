@@ -179,6 +179,9 @@ class PlanService
             $date = $start->modify("+{$dayIndex} day");
             $dateString = $date->format('Y-m-d');
             $actualWeekday = (int)$date->format('N') - 1; // 0 = Montag
+            if ($actualWeekday !== 0) {
+                continue;
+            }
             
             foreach ($shifts as $shift) {
                 $shiftId = (int)$shift['id'];
@@ -200,6 +203,7 @@ class PlanService
                     
                     foreach ($employees as $employee) {
                         $employeeId = (int)$employee['id'];
+
                         if (!in_array($actualWeekday, $employee['allowed_weekdays'], true) || !in_array($roleId, $employee['roles'], true)) {
                             continue;
                         }
