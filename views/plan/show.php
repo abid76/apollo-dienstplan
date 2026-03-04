@@ -31,6 +31,19 @@ foreach ($dates as $date) {
     $roleCountsByDate[$date] = $counts;
 }
 
+// Pro Datum: Gesamtanzahl der eingeteilten Mitarbeiter (mindestens eine Schicht)
+$employeeCountByDate = [];
+foreach ($dates as $date) {
+    $count = 0;
+    foreach ($employees as $employee) {
+        $entries = $grid[$employee['id']][$date] ?? [];
+        if (!empty($entries)) {
+            $count++;
+        }
+    }
+    $employeeCountByDate[$date] = $count;
+}
+
 // Pro Datum: Schichten mit Mitarbeiteranzahl (Schicht = Name + Uhrzeit)
 $shiftsByDate = [];
 foreach ($dates as $date) {
@@ -67,7 +80,7 @@ $coverageWarnings = $coverageWarnings ?? [];
 </p>
 
 <p>
-    <a href="<?= BASE_PATH ?>/plan/export?id=<?= (int)$plan['id'] ?>">Als Excel (eine Woche pro Reiter) exportieren</a>
+    <a href="<?= BASE_PATH ?>/plan/export?id=<?= (int)$plan['id'] ?>">Excel-Export</a>
 </p>
 
 <?php if (!empty($employeeUnderloadWarnings)): ?>
@@ -156,6 +169,13 @@ $coverageWarnings = $coverageWarnings ?? [];
     <?php endforeach; ?>
     </tbody>
     <tfoot>
+    <tr>
+        <th style="text-align: left;">Mitarbeiter</th>
+        <?php foreach ($dates as $date): ?>
+            <?php $count = $employeeCountByDate[$date] ?? 0; ?>
+            <td colspan="2" style="text-align: center;"><?php echo (int)$count; ?></td>
+        <?php endforeach; ?>
+    </tr>
     <tr>
         <th style="text-align: left;">Rollen</th>
         <?php foreach ($dates as $date): ?>
