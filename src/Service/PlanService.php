@@ -87,24 +87,25 @@ class PlanService
                         $requiredCount = (int)$rule['required_count'];
 
                         $candidates = [];
-                    foreach ($employees as $employee) {
-                        $employeeId = (int)$employee['id'];
+                        
+                        foreach ($employees as $employee) {
+                            $employeeId = (int)$employee['id'];
 
-                        if (!$this->isEmployeeAllowedForDayShiftAndRole(
-                            $employee,
-                            $shiftId,
-                            $roleId,
-                            $dateString,
-                            $weekIndex,
-                            $assignmentsPerEmployeeShiftPerWeek,
-                            $assignmentsPerWeek,
-                            $assignedPerDay
-                        )) {
-                            continue;
+                            if (!$this->isEmployeeAllowedForDayShiftAndRole(
+                                $employee,
+                                $shiftId,
+                                $roleId,
+                                $dateString,
+                                $weekIndex,
+                                $assignmentsPerEmployeeShiftPerWeek,
+                                $assignmentsPerWeek,
+                                $assignedPerDay
+                            )) {
+                                continue;
+                            }
+
+                            $candidates[] = $employeeId;
                         }
-
-                        $candidates[] = $employeeId;
-                    }
 
                         if (!$candidates) {
                             continue;
@@ -150,6 +151,8 @@ class PlanService
             }
         }
 
+        return $planId;
+
         // Nun stellen wir sicher, dass Montags so viele Mitarbeiter wie möglich besetzt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $dayIndex = $weekIndex * 7;
@@ -159,7 +162,7 @@ class PlanService
             if ($actualWeekday !== 0) {
                 continue;
             }
-            
+
             foreach ($shifts as $shift) {
                 $shiftId = (int)$shift['id'];
 
@@ -177,7 +180,7 @@ class PlanService
                 foreach ($shiftRules as $rule) {
                     $roleId = (int)$rule['role_id'];
                     $requiredCount = (int)$rule['required_count'];
-                    
+
                     foreach ($employees as $employee) {
 
                         if (!$this->isEmployeeAllowedForDayShiftAndRole(
