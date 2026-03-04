@@ -53,6 +53,9 @@ foreach ($dates as $date) {
     }
     $shiftsByDate[$date] = $byShift;
 }
+
+$employeeWeeklyShiftCounts = $employeeWeeklyShiftCounts ?? [];
+$employeeUnderloadWarnings = $employeeUnderloadWarnings ?? [];
 ?>
 
 <h1>Dienstplan #<?php echo (int)$plan['id']; ?></h1>
@@ -61,6 +64,22 @@ foreach ($dates as $date) {
     Startdatum: <?php echo htmlspecialchars($plan['start_date'], ENT_QUOTES, 'UTF-8'); ?><br>
     Wochen: <?php echo (int)$plan['weeks']; ?>
 </p>
+
+<?php if (!empty($employeeUnderloadWarnings)): ?>
+    <div style="border: 1px solid #f0ad4e; background-color: #fcf8e3; padding: 10px; margin-bottom: 15px;">
+        <strong>Warnung zur Auslastung:</strong>
+        <ul style="margin: 5px 0 0 20px;">
+            <?php foreach ($employeeUnderloadWarnings as $warning): ?>
+                <li>
+                    <?php echo htmlspecialchars($warning['employee_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                    in Woche <?php echo (int)$warning['week']; ?>:
+                    <?php echo (int)$warning['actual']; ?> von
+                    <?php echo (int)$warning['max']; ?> geplanten Schichten.
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
 
 <style>.plan-table th:first-child,
 .plan-table td:first-child { white-space: nowrap; }

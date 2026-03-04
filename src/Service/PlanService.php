@@ -199,7 +199,6 @@ class PlanService
                     $actualWeekday = (int)$date->format('N') - 1; // 0 = Montag
 
                     foreach ($shifts as $shift) {
-
                         $shiftId = (int)$shift['id'];
                         // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
                         $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
@@ -361,6 +360,59 @@ class PlanService
             ];
         }
 
+        // Wochenweise Zählung der Schichten pro Mitarbeiter
+        $employeeWeeklyShiftCounts = [];
+
+        foreach ($entries as $entry) {
+            $employeeId = (int)$entry['employee_id'];
+            $entryDate = new \DateTimeImmutable($entry['date']);
+            $diffDays = (int)$start->diff($entryDate)->days;
+            $weekIndex = intdiv($diffDays, 7);
+
+            if ($weekIndex < 0 || $weekIndex >= (int)$plan['weeks']) {
+                continue;
+            }
+
+            $employeeWeeklyShiftCounts[$employeeId][$weekIndex] =
+                ($employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0) + 1;
+        }
+
+        // Maximalwerte aus den Mitarbeiterdaten holen
+        $allEmployees = $this->employees->findAll();
+        $maxPerWeekByEmployee = [];
+        $nameByEmployee = [];
+        foreach ($allEmployees as $empRow) {
+            $empId = (int)$empRow['id'];
+            $nameByEmployee[$empId] = $empRow['name'] ?? '';
+            if (isset($empRow['max_shifts_per_week'])) {
+                $maxPerWeekByEmployee[$empId] = (int)$empRow['max_shifts_per_week'];
+            }
+        }
+
+        $employeeUnderloadWarnings = [];
+        $weeks = (int)$plan['weeks'];
+
+        foreach ($employees as $employee) {
+            $employeeId = (int)$employee['id'];
+            $maxPerWeek = $maxPerWeekByEmployee[$employeeId] ?? null;
+            if ($maxPerWeek === null || $maxPerWeek <= 0) {
+                continue;
+            }
+
+            for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+                $actual = $employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0;
+                if ($actual < $maxPerWeek) {
+                    $employeeUnderloadWarnings[] = [
+                        'employee_id' => $employeeId,
+                        'employee_name' => $employee['name'] ?? ($nameByEmployee[$employeeId] ?? ''),
+                        'week' => $weekIndex + 1,
+                        'actual' => $actual,
+                        'max' => $maxPerWeek,
+                    ];
+                }
+            }
+        }
+
         usort(
             $employees,
             fn($a, $b) => ($a['name'] ?? '') <=> ($b['name'] ?? '')
@@ -371,6 +423,8 @@ class PlanService
             'employees' => $employees,
             'dates' => $dateList,
             'grid' => $grid,
+            'employeeWeeklyShiftCounts' => $employeeWeeklyShiftCounts,
+            'employeeUnderloadWarnings' => $employeeUnderloadWarnings,
         ];
     }
 
