@@ -395,9 +395,11 @@ class PlanService
                                 'time_range' => $this->formatTimeRangeDisplay($from, $to),
                                 'count' => 0,
                                 'time_from' => $from,
+                                'names' => [],
                             ];
                         }
                         $byShift[$key]['count']++;
+                        $byShift[$key]['names'][] = $employee['name'] ?? '';
                     }
                 }
             }
@@ -546,6 +548,8 @@ class PlanService
             $footerBottomShiftsRange = 'B' . $footerShiftsRow . ':' . $lastCol . $footerShiftsRow;
             $sheet->getStyle($footerBottomShiftsRange)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
 
+            $maxShiftLines = 0;
+
             for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                 $dateIndex = $weekIndex * 7 + $dayOffset;
                 if (!isset($dates[$dateIndex])) {
@@ -585,14 +589,34 @@ class PlanService
                 });
                 $shiftParts = [];
                 foreach ($shiftInfos as $info) {
-                    $shiftParts[] = ($info['time_range'] ?? '') . ': ' . $info['count'];
+                    $names = array_unique($info['names'] ?? []);
+                    $names = array_values(array_filter($names, static fn($n) => $n !== ''));
+                    $label = ($info['time_range'] ?? '') . ': ' . $info['count'];
+                    if ($names) {
+                        $label .= ' (' . implode(', ', $names) . ')';
+                    }
+                    $shiftParts[] = $label;
                 }
                 if ($shiftParts) {
-                    // Alle Schichten des Tages in einer Zelle mit Zeilenumbruch.
-                    // Kein Merge, damit Excel die Zeilenhöhe korrekt für alle Zeilen anpasst.
+                    // Alle Schichten des Tages in einer Zelle mit Zeilenumbruch (über beide Spalten).
+                    $shiftRange = $colTime . $footerShiftsRow . ':' . $colRole . $footerShiftsRow;
+                    $sheet->mergeCells($shiftRange);
                     $sheet->setCellValue($colTime . $footerShiftsRow, implode("\n", $shiftParts));
-                    $sheet->getStyle($colTime . $footerShiftsRow)->getAlignment()->setWrapText(true);
+                    $sheet->getStyle($shiftRange)->getAlignment()
+                        ->setWrapText(true)
+                        ->setHorizontal(Alignment::HORIZONTAL_LEFT);
+                    $maxShiftLines = max($maxShiftLines, count($shiftParts));
                 }
+            }
+
+            if ($maxShiftLines > 0) {
+                $defaultHeight = $sheet->getDefaultRowDimension()->getRowHeight();
+                if ($defaultHeight <= 0) {
+                    $defaultHeight = 15;
+                }
+                // etwas Puffer, damit alle Textzeilen sicher sichtbar sind
+                $effectiveLines = $maxShiftLines + 4;
+                $sheet->getRowDimension($footerShiftsRow)->setRowHeight($defaultHeight * $effectiveLines);
             }
 
             // Footer-Zellen vertikal oben ausrichten

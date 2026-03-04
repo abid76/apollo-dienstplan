@@ -58,9 +58,11 @@ foreach ($dates as $date) {
                         'time_range' => formatTimeRange($entry['time_from'] ?? '', $entry['time_to'] ?? ''),
                         'count' => 0,
                         'time_from' => $entry['time_from'] ?? '',
+                        'names' => [],
                     ];
                 }
                 $byShift[$key]['count']++;
+                $byShift[$key]['names'][] = $employee['name'] ?? '';
             }
         }
     }
@@ -126,7 +128,9 @@ $coverageWarnings = $coverageWarnings ?? [];
 
 <style>.plan-table th:first-child,
 .plan-table td:first-child { white-space: nowrap; }
-.plan-table tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }</style>
+.plan-table tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }
+.plan-table .shift-line { margin-bottom: 2px; }
+.plan-table .shift-toggle { margin-left: 6px; cursor: pointer; }</style>
 <table class="plan-table">
     <thead>
     <tr>
@@ -195,16 +199,63 @@ $coverageWarnings = $coverageWarnings ?? [];
             <?php
             $shifts = $shiftsByDate[$date] ?? [];
             uasort($shifts, fn($a, $b) => ($a['time_from'] ?? '') <=> ($b['time_from'] ?? ''));
-            $parts = [];
-            foreach ($shifts as $info) {
-                $parts[] = htmlspecialchars($info['time_range'], ENT_QUOTES, 'UTF-8') . ': ' . $info['count'];
-            }
             ?>
-            <td colspan="2" style="text-align: left;"><?php echo implode('<br>', $parts); ?></td>
+            <td colspan="2" style="text-align: left;">
+                <?php
+                $shiftIndex = 0;
+                foreach ($shifts as $info) {
+                    $shiftIndex++;
+                    $detailsId = 'shift-details-' . $date . '-' . $shiftIndex;
+                    $timeRange = htmlspecialchars($info['time_range'], ENT_QUOTES, 'UTF-8');
+                    $count = (int)($info['count'] ?? 0);
+                    $names = array_unique($info['names'] ?? []);
+                    $escapedNames = array_map(
+                        fn($n) => htmlspecialchars($n, ENT_QUOTES, 'UTF-8'),
+                        array_filter($names, fn($n) => $n !== '')
+                    );
+                    $namesText = implode(', ', $escapedNames);
+                    ?>
+                    <div class="shift-line">
+                        <span><?php echo $timeRange; ?>: <?php echo $count; ?></span>
+                        <?php if ($namesText !== ''): ?>
+                            <button type="button"
+                                    class="shift-toggle"
+                                    data-target="<?php echo htmlspecialchars($detailsId, ENT_QUOTES, 'UTF-8'); ?>">
+                                +
+                            </button>
+                            <div id="<?php echo htmlspecialchars($detailsId, ENT_QUOTES, 'UTF-8'); ?>"
+                                 class="shift-details"
+                                 style="display: none; margin-left: 1.5em;">
+                                <?php echo $namesText; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php } ?>
+            </td>
         <?php endforeach; ?>
     </tr>
     </tfoot>
 </table>
+
+<script>
+document.addEventListener('click', function (event) {
+    const btn = event.target.closest('.shift-toggle');
+    if (!btn) {
+        return;
+    }
+    const targetId = btn.getAttribute('data-target');
+    if (!targetId) {
+        return;
+    }
+    const details = document.getElementById(targetId);
+    if (!details) {
+        return;
+    }
+    const isHidden = details.style.display === '' || details.style.display === 'none';
+    details.style.display = isHidden ? 'block' : 'none';
+    btn.textContent = isHidden ? '−' : '+';
+});
+</script>
 
 <p><a href="<?= BASE_PATH ?>/plan">Zurück zur Übersicht</a> | <a href="<?= BASE_PATH ?>/plan/create">Neuen Plan erstellen</a></p>
 
