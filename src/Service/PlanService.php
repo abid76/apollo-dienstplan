@@ -38,7 +38,6 @@ class PlanService
         $shifts = $this->shifts->findAll();
 
         $start = new \DateTimeImmutable($startDate);
-        $totalDays = $weeks * 7;
 
         $assignmentsPerWeek = [];
         $assignmentsPerEmployeeShiftPerWeek = [];
@@ -87,7 +86,7 @@ class PlanService
                         $requiredCount = (int)$rule['required_count'];
 
                         $candidates = [];
-                        
+
                         foreach ($employees as $employee) {
                             $employeeId = (int)$employee['id'];
 
@@ -150,8 +149,6 @@ class PlanService
                 }
             }
         }
-
-        return $planId;
 
         // Nun stellen wir sicher, dass Montags so viele Mitarbeiter wie möglich besetzt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
