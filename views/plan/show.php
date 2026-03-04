@@ -66,6 +66,10 @@ $coverageWarnings = $coverageWarnings ?? [];
     Wochen: <?php echo (int)$plan['weeks']; ?>
 </p>
 
+<p>
+    <a href="<?= BASE_PATH ?>/plan/export?id=<?= (int)$plan['id'] ?>">Als Excel (eine Woche pro Reiter) exportieren</a>
+</p>
+
 <?php if (!empty($employeeUnderloadWarnings)): ?>
     <div style="border: 1px solid #f0ad4e; background-color: #fcf8e3; padding: 10px; margin-bottom: 15px;">
         <strong>Warnung zur Auslastung:</strong>

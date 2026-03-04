@@ -6,22 +6,22 @@ if (!function_exists('formatTimeRange')) {
         $from = substr($timeFrom, 0, 5);
         $to = substr($timeTo, 0, 5);
         if (substr($from, -3) === ':00') {
-            $from = substr($from, 0, -3);
+            $from = (int) substr($from, 0, 2);
         }
         if (substr($to, -3) === ':00') {
-            $to = substr($to, 0, -3);
+            $to = (int) substr($to, 0, 2);
         }
         return $from . '-' . $to . ' Uhr';
     }
 }
 
 if (!function_exists('formatTime')) {
-    /** Einzelne Uhrzeit z. B. "13 Uhr" oder "13:30 Uhr" */
+    /** Einzelne Uhrzeit z. B. "9 Uhr" oder "13:30 Uhr" */
     function formatTime(string $time): string
     {
         $t = substr($time, 0, 5);
         if (substr($t, -3) === ':00') {
-            $t = substr($t, 0, -3);
+            $t = (int) substr($t, 0, 2);
         }
         return $t . ' Uhr';
     }

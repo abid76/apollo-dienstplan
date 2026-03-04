@@ -2,11 +2,12 @@
   "name": "abid/dienstplan",
   "description": "Einfache Dienstplan-Anwendung in PHP",
   "type": "project",
-  "require": {},
+  "require": {
+    "phpoffice/phpspreadsheet": "^5.5"
+  },
   "autoload": {
     "psr-4": {
       "App\\": "src/"
     }
   }
 }
-

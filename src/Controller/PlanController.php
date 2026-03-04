@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Service\PlanService;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class PlanController
 {
@@ -81,6 +82,28 @@ class PlanController
 
         $content = $this->renderView('plan/show', $data);
         $this->renderLayout($content);
+    }
+
+    public function export(): void
+    {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $spreadsheet = $this->service->createSpreadsheetForPlan($id);
+
+        if ($spreadsheet === null) {
+            http_response_code(404);
+            echo 'Plan nicht gefunden.';
+            return;
+        }
+
+        $fileName = 'dienstplan_' . $id . '.xlsx';
+
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
     }
 
     private function renderView(string $view, array $params = []): string

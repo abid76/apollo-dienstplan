@@ -6,6 +6,9 @@ use App\Repository\PlanRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\RuleRepository;
 use App\Repository\EmployeeRepository;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class PlanService
 {
@@ -332,6 +335,235 @@ class PlanService
         }
 
         return $planId;
+    }
+
+    public function createSpreadsheetForPlan(int $planId): ?Spreadsheet
+    {
+        $data = $this->getPlanViewData($planId);
+        if (!$data) {
+            return null;
+        }
+
+        $plan = $data['plan'];
+        $employees = $data['employees'];
+        $dates = $data['dates'];
+        $grid = $data['grid'];
+
+        // Aggregationen wie in der HTML-Ansicht (Footer "Rollen" / "Schichten")
+        $roleCountsByDate = [];
+        foreach ($dates as $date) {
+            $counts = [];
+            foreach ($employees as $employee) {
+                $entries = $grid[$employee['id']][$date] ?? [];
+                foreach ($entries as $entry) {
+                    $sc = $entry['shortcode'] ?? '';
+                    if ($sc !== '') {
+                        $counts[$sc] = ($counts[$sc] ?? 0) + 1;
+                    }
+                }
+            }
+            $roleCountsByDate[$date] = $counts;
+        }
+
+        $shiftsByDate = [];
+        foreach ($dates as $date) {
+            $byShift = [];
+            foreach ($employees as $employee) {
+                $entries = $grid[$employee['id']][$date] ?? [];
+                foreach ($entries as $entry) {
+                    $from = $entry['time_from'] ?? '';
+                    $to = $entry['time_to'] ?? '';
+                    $key = ($entry['shift_name'] ?? '') . '|' . $from . '|' . $to;
+                    if ($key !== '||') {
+                        if (!isset($byShift[$key])) {
+                            $byShift[$key] = [
+                                'time_range' => $this->formatTimeRangeDisplay($from, $to),
+                                'count' => 0,
+                                'time_from' => $from,
+                            ];
+                        }
+                        $byShift[$key]['count']++;
+                    }
+                }
+            }
+            $shiftsByDate[$date] = $byShift;
+        }
+
+        $weeks = (int)$plan['weeks'];
+        if ($weeks < 1) {
+            return null;
+        }
+
+        $spreadsheet = new Spreadsheet();
+
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $sheet = $weekIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
+            $sheet->setTitle('Woche ' . ($weekIndex + 1));
+
+            // Kopfzeile: Zeile 1 = Wochentag/Datum (über 2 Spalten), Zeile 2 = Unterüberschriften
+            // "Mitarbeiter" steht in Zeile 2 der ersten Spalte
+            $sheet->setCellValue('A2', 'Mitarbeiter');
+
+            for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+                $dateIndex = $weekIndex * 7 + $dayOffset;
+                if (!isset($dates[$dateIndex])) {
+                    continue;
+                }
+                $dateString = $dates[$dateIndex];
+                $dt = new \DateTimeImmutable($dateString);
+                $weekdayNames = [
+                    1 => 'Mo',
+                    2 => 'Di',
+                    3 => 'Mi',
+                    4 => 'Do',
+                    5 => 'Fr',
+                    6 => 'Sa',
+                    7 => 'So',
+                ];
+                $weekday = (int)$dt->format('N');
+                $label = ($weekdayNames[$weekday] ?? '') . ' ' . $dt->format('d.m.');
+
+                $colTimeIndex = 2 + $dayOffset * 2;
+                $colRoleIndex = $colTimeIndex + 1;
+                $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
+                $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                // Zeile 1: Tages-Header über beide Spalten
+                $sheet->mergeCells($colTime . '1:' . $colRole . '1');
+                $sheet->setCellValue($colTime . '1', $label);
+
+                // Zeile 2: Unterüberschriften
+                $sheet->setCellValue($colTime . '2', 'Arbeitszeit');
+                $sheet->setCellValue($colRole . '2', 'Rolle');
+            }
+
+            $lastCol = Coordinate::stringFromColumnIndex(1 + 7 * 2);
+            // Überschriftenzeilen 1–2 fett und zentriert
+            $headerRange = 'A1:' . $lastCol . '2';
+            $sheet->getStyle($headerRange)->getFont()->setBold(true);
+            $sheet->getStyle($headerRange)->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER);
+
+            // Daten beginnen in Zeile 3
+            $row = 3;
+            foreach ($employees as $employee) {
+                $employeeId = (int)$employee['id'];
+                $sheet->setCellValue('A' . $row, $employee['name'] ?? '');
+
+                for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+                    $dateIndex = $weekIndex * 7 + $dayOffset;
+                    if (!isset($dates[$dateIndex])) {
+                        continue;
+                    }
+                    $dateString = $dates[$dateIndex];
+
+                    $entries = $grid[$employeeId][$dateString] ?? [];
+                    $times = [];
+                    $roles = [];
+                    foreach ($entries as $entry) {
+                        $from = $entry['time_from'] ?? '';
+                        $to = $entry['time_to'] ?? '';
+                        if ($from !== '' || $to !== '') {
+                            $times[] = $this->formatTimeRangeDisplay($from, $to);
+                        }
+                        if (!empty($entry['shortcode'])) {
+                            $roles[] = $entry['shortcode'];
+                        }
+                    }
+
+                    $colTimeIndex = 2 + $dayOffset * 2;
+                    $colRoleIndex = $colTimeIndex + 1;
+                    $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
+                    $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                    if ($times) {
+                        $sheet->setCellValue($colTime . $row, implode(', ', $times));
+                    }
+                    if ($roles) {
+                        $sheet->setCellValue($colRole . $row, implode(', ', $roles));
+                    }
+                }
+
+                $row++;
+            }
+
+            // Footer-Zeile "Rollen" / "Schichten" ergänzen
+            $footerRolesRow = $row;
+            $footerShiftsRow = $row + 1;
+
+            $sheet->setCellValue('A' . $footerRolesRow, 'Rollen');
+            $sheet->setCellValue('A' . $footerShiftsRow, 'Schichten');
+            // Footer-Bezeichner wie Überschrift formatieren
+            $sheet->getStyle('A' . $footerRolesRow)->getFont()->setBold(true);
+            $sheet->getStyle('A' . $footerShiftsRow)->getFont()->setBold(true);
+
+            for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+                $dateIndex = $weekIndex * 7 + $dayOffset;
+                if (!isset($dates[$dateIndex])) {
+                    continue;
+                }
+                $dateString = $dates[$dateIndex];
+
+                $colTimeIndex = 2 + $dayOffset * 2;
+                $colRoleIndex = $colTimeIndex + 1;
+                $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
+                $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                // Rollen pro Datum
+                $roleCounts = $roleCountsByDate[$dateString] ?? [];
+                $roleParts = [];
+                foreach ($roleCounts as $shortcode => $n) {
+                    $roleParts[] = $shortcode . ': ' . $n;
+                }
+                if ($roleParts) {
+                    $range = $colTime . $footerRolesRow . ':' . $colRole . $footerRolesRow;
+                    $sheet->mergeCells($range);
+                    $sheet->setCellValue($colTime . $footerRolesRow, implode(', ', $roleParts));
+                }
+
+                // Schichten pro Datum
+                $shiftInfos = $shiftsByDate[$dateString] ?? [];
+                // nach Startzeit sortieren (wie in der HTML-Ansicht)
+                uasort($shiftInfos, static function (array $a, array $b): int {
+                    return ($a['time_from'] ?? '') <=> ($b['time_from'] ?? '');
+                });
+                $shiftParts = [];
+                foreach ($shiftInfos as $info) {
+                    $shiftParts[] = ($info['time_range'] ?? '') . ': ' . $info['count'];
+                }
+                if ($shiftParts) {
+                    $range = $colTime . $footerShiftsRow . ':' . $colRole . $footerShiftsRow;
+                    $sheet->mergeCells($range);
+                    $sheet->setCellValue($colTime . $footerShiftsRow, implode("\n", $shiftParts));
+                    $sheet->getStyle($colTime . $footerShiftsRow)->getAlignment()->setWrapText(true);
+                }
+            }
+
+            // Spaltenbreite automatisch an Inhalt anpassen
+            for ($colIndex = 1; $colIndex <= 1 + 7 * 2; $colIndex++) {
+                $col = Coordinate::stringFromColumnIndex($colIndex);
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        return $spreadsheet;
+    }
+
+    /** Uhrzeitbereich im Anzeigeformat z. B. "9-17 Uhr", "13-20 Uhr" */
+    private function formatTimeRangeDisplay(string $timeFrom, string $timeTo): string
+    {
+        $from = substr($timeFrom, 0, 5);
+        $to = substr($timeTo, 0, 5);
+        if (substr($from, -3) === ':00') {
+            $from = (int) substr($from, 0, 2);
+        }
+        if (substr($to, -3) === ':00') {
+            $to = (int) substr($to, 0, 2);
+        }
+        return $from . '-' . $to . ' Uhr';
     }
 
     private function isEmployeeAllowedForDayShiftAndRole(

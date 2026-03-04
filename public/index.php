@@ -75,6 +75,7 @@ $router->get('/plan', [new PlanController(), 'index']);
 $router->get('/plan/create', [new PlanController(), 'form']);
 $router->post('/plan/generate', [new PlanController(), 'generate']);
 $router->get('/plan/show', [new PlanController(), 'show']);
+$router->get('/plan/export', [new PlanController(), 'export']);
 $router->post('/plan/delete', [new PlanController(), 'delete']);
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
