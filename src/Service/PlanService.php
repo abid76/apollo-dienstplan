@@ -451,6 +451,67 @@ class PlanService
                 ($employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0) + 1;
         }
 
+        // Belegungsregeln pro Tag/Schicht prüfen
+        $ruleRows = $this->rules->findAllWithDetails();
+
+        // Zuordnungen nach Datum/Schicht/Rolle zählen
+        $assignmentsByDateShiftRole = [];
+        foreach ($entries as $entry) {
+            $date = $entry['date'];
+            $shiftId = (int)$entry['shift_id'];
+            $roleId = (int)$entry['role_id'];
+            $assignmentsByDateShiftRole[$date][$shiftId][$roleId] =
+                ($assignmentsByDateShiftRole[$date][$shiftId][$roleId] ?? 0) + 1;
+        }
+
+        $coverageWarnings = [];
+        foreach ($dateList as $date) {
+            $dt = new \DateTimeImmutable($date);
+            $weekdayZeroBased = (int)$dt->format('N') - 1; // 0 = Montag
+
+            foreach ($ruleRows as $rule) {
+                $shiftId = (int)$rule['shift_id'];
+                $roleId = (int)$rule['role_id'];
+                $requiredCount = (int)$rule['required_count'];
+
+                // Regel gilt nur an den in der Schicht definierten Wochentagen
+                $shiftWeekdays = $rule['shift_weekdays'] ?? [isset($rule['weekday']) ? (int)$rule['weekday'] : 0];
+                if (!in_array($weekdayZeroBased, $shiftWeekdays, true)) {
+                    continue;
+                }
+
+                $actualCount = (int)($assignmentsByDateShiftRole[$date][$shiftId][$roleId] ?? 0);
+                if ($actualCount < $requiredCount) {
+                    $coverageWarnings[] = [
+                        'date' => $date,
+                        'shift_name' => $rule['shift_name'] ?? '',
+                        'time_from' => $rule['time_from'] ?? '',
+                        'time_to' => $rule['time_to'] ?? '',
+                        'role_name' => $rule['role_name'] ?? '',
+                        'role_shortcode' => $rule['shortcode'] ?? '',
+                        'required' => $requiredCount,
+                        'actual' => $actualCount,
+                    ];
+                }
+            }
+        }
+
+        // Warnungen sinnvoll sortieren (Datum, Zeit, Rolle)
+        usort(
+            $coverageWarnings,
+            function (array $a, array $b): int {
+                if ($a['date'] === $b['date']) {
+                    $timeA = ($a['time_from'] ?? '') . ($a['time_to'] ?? '');
+                    $timeB = ($b['time_from'] ?? '') . ($b['time_to'] ?? '');
+                    if ($timeA === $timeB) {
+                        return ($a['role_name'] ?? '') <=> ($b['role_name'] ?? '');
+                    }
+                    return $timeA <=> $timeB;
+                }
+                return $a['date'] <=> $b['date'];
+            }
+        );
+
         // Maximalwerte aus den Mitarbeiterdaten holen
         $allEmployees = $this->employees->findAll();
         $maxPerWeekByEmployee = [];
@@ -499,6 +560,7 @@ class PlanService
             'grid' => $grid,
             'employeeWeeklyShiftCounts' => $employeeWeeklyShiftCounts,
             'employeeUnderloadWarnings' => $employeeUnderloadWarnings,
+            'coverageWarnings' => $coverageWarnings,
         ];
     }
 

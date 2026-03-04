@@ -56,6 +56,7 @@ foreach ($dates as $date) {
 
 $employeeWeeklyShiftCounts = $employeeWeeklyShiftCounts ?? [];
 $employeeUnderloadWarnings = $employeeUnderloadWarnings ?? [];
+$coverageWarnings = $coverageWarnings ?? [];
 ?>
 
 <h1>Dienstplan #<?php echo (int)$plan['id']; ?></h1>
@@ -75,6 +76,31 @@ $employeeUnderloadWarnings = $employeeUnderloadWarnings ?? [];
                     in Woche <?php echo (int)$warning['week']; ?>:
                     <?php echo (int)$warning['actual']; ?> von
                     <?php echo (int)$warning['max']; ?> geplanten Schichten.
+                </li>
+            <?php endforeach; ?>
+        </ul>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($coverageWarnings)): ?>
+    <div style="border: 1px solid #d9534f; background-color: #f2dede; padding: 10px; margin-bottom: 15px;">
+        <strong>Warnung zur Schichtbelegung:</strong>
+        <ul style="margin: 5px 0 0 20px;">
+            <?php foreach ($coverageWarnings as $warning): ?>
+                <?php
+                $dt = new DateTime($warning['date']);
+                $w = (int)$dt->format('N');
+                $label = $weekdayNames[$w] . ' ' . $dt->format('d.m.');
+                $timeRange = formatTimeRange($warning['time_from'] ?? '', $warning['time_to'] ?? '');
+                $roleLabel = $warning['role_shortcode'];
+                ?>
+                <li>
+                    <?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?>,
+                    <?php echo htmlspecialchars($warning['shift_name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+                    (<?php echo htmlspecialchars($timeRange, ENT_QUOTES, 'UTF-8'); ?>),
+                    Rolle <?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>:
+                    geplant <?php echo (int)$warning['required']; ?>,
+                    tatsächlich <?php echo (int)$warning['actual']; ?>.
                 </li>
             <?php endforeach; ?>
         </ul>
