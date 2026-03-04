@@ -173,6 +173,76 @@ class PlanService
             }
         }
 
+        // Nun stellen wir sicher, dass Montags so viele Mitarbeiter wie möglich besetzt sind
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $dayIndex = $weekIndex * 7;
+            $date = $start->modify("+{$dayIndex} day");
+            $dateString = $date->format('Y-m-d');
+            $actualWeekday = (int)$date->format('N') - 1; // 0 = Montag
+            
+            foreach ($shifts as $shift) {
+                $shiftId = (int)$shift['id'];
+
+                // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
+                $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                if (!in_array($actualWeekday, $shiftWeekdays, true)) {
+                    continue;
+                }
+
+                $shiftRules = $this->rules->findByShift($shiftId);
+                if (!$shiftRules) {
+                    continue;
+                }
+
+                foreach ($shiftRules as $rule) {
+                    $roleId = (int)$rule['role_id'];
+                    $requiredCount = (int)$rule['required_count'];
+                    
+                    foreach ($employees as $employee) {
+                        $employeeId = (int)$employee['id'];
+                        if (!in_array($actualWeekday, $employee['allowed_weekdays'], true) || !in_array($roleId, $employee['roles'], true)) {
+                            continue;
+                        }
+                        if ($completeShiftRoleAssignment[$dateString][$shiftId][$roleId] ?? false) {
+                            continue;
+                        }
+                        if (!empty($assignedPerDay[$dateString][$employeeId])) {
+                            continue;
+                        }
+                        $allowedShifts = $employee['allowed_shifts'] ?? [];
+                        $allowedShiftIds = array_column($allowedShifts, 'shift_id');
+                        if (!in_array($shiftId, $allowedShiftIds, true)) {
+                            continue;
+                        }
+                        $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
+                        if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
+                            continue;
+                        }
+                        $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
+                        if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                            continue;
+                        }
+                        $this->plans->addEntry(
+                            $planId,
+                            $dateString,
+                            $shiftId,
+                            $employeeId,
+                            $roleId
+                        );
+                        $assignedPerDay[$dateString][$employeeId] = $roleId;
+                        $assignmentsPerWeek[$employeeId][$weekIndex] =
+                            ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                        $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
+                            ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
+                        $remainingEmployeeShifts[$employeeId]--;
+                        if ($rule['required_count_exact'] === 1) {
+                            $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
+                        }
+                    }
+                }
+            }
+        }
+
         // Nun für alle Mitarbeiter sicherstellen, dass sie auf die Schichten verteilt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $remainingEmployeeShifts = [];
