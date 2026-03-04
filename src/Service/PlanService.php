@@ -416,6 +416,8 @@ class PlanService
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $sheet = $weekIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
             $sheet->setTitle('Woche ' . ($weekIndex + 1));
+            // Zoomfaktor auf 110 % setzen
+            $sheet->getSheetView()->setZoomScale(110);
 
             // Kopfzeile: Zeile 2 = Wochentag/Datum (über 2 Spalten), Zeile 3 = Unterüberschriften
             // "Mitarbeiter" steht in Zeile 3 der zweiten Spalte (erste Zeile/Spalte bleiben leer)
