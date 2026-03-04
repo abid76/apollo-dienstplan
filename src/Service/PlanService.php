@@ -843,6 +843,8 @@ class PlanService
                 if ($actualCount < $requiredCount) {
                     $coverageWarnings[] = [
                         'date' => $date,
+                        'shift_id' => $shiftId,
+                        'role_id' => $roleId,
                         'shift_name' => $rule['shift_name'] ?? '',
                         'time_from' => $rule['time_from'] ?? '',
                         'time_to' => $rule['time_to'] ?? '',
@@ -870,6 +872,17 @@ class PlanService
                 return $a['date'] <=> $b['date'];
             }
         );
+
+        // Pro Warnung: Mitarbeiter ermitteln, die an diesem Tag in dieser Schicht/Rolle eingeteilt werden könnten
+        foreach ($coverageWarnings as &$warning) {
+            $weekdayZeroBased = (int)(new \DateTimeImmutable($warning['date']))->format('N') - 1;
+            $warning['eligible_employees'] = $this->employees->getEligibleEmployeeNamesForShiftOnWeekday(
+                $weekdayZeroBased,
+                (int)$warning['shift_id'],
+                (int)$warning['role_id']
+            );
+        }
+        unset($warning);
 
         // Maximalwerte aus den Mitarbeiterdaten holen
         $allEmployees = $this->employees->findAll();

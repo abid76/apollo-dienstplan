@@ -120,6 +120,13 @@ $coverageWarnings = $coverageWarnings ?? [];
                     Rolle <?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?>:
                     geplant <?php echo (int)$warning['required']; ?>,
                     tatsächlich <?php echo (int)$warning['actual']; ?>.
+                    <?php
+                    $eligible = $warning['eligible_employees'] ?? [];
+                    if (!empty($eligible)):
+                        $escaped = array_map(fn($n) => htmlspecialchars($n, ENT_QUOTES, 'UTF-8'), $eligible);
+                    ?>
+                        Mögliche Mitarbeiter: <?php echo implode(', ', $escaped); ?>.
+                    <?php endif; ?>
                 </li>
             <?php endforeach; ?>
         </ul>

@@ -282,4 +282,37 @@ class EmployeeRepository
             ]);
         }
     }
+
+    /**
+     * Liefert die Namen aller Mitarbeiter, die an einem Wochentag für die gegebene Schicht und Rolle
+     * grundsätzlich eingeteilt werden könnten (gemäß employee_allowed_weekday, employee_allowed_shift,
+     * employee_allowed_weekday_shift und employee_role). Wochentag 0 = Montag, 6 = Sonntag.
+     *
+     * @param int $weekday Wochentag 0–6 (0 = Montag)
+     * @param int $shiftId Schicht-ID
+     * @param int $roleId Rollen-ID
+     * @return list<string> Mitarbeiternamen, sortiert
+     */
+    public function getEligibleEmployeeNamesForShiftOnWeekday(int $weekday, int $shiftId, int $roleId): array
+    {
+        $sql = '
+            SELECT e.name
+            FROM employee e
+            INNER JOIN employee_role er ON e.id = er.employee_id AND er.role_id = :role_id
+            INNER JOIN employee_allowed_weekday eaw ON e.id = eaw.employee_id AND eaw.weekday = :weekday
+            INNER JOIN employee_allowed_shift eas ON e.id = eas.employee_id AND eas.shift_id = :shift_id
+            LEFT JOIN employee_allowed_weekday_shift eaws ON e.id = eaws.employee_id AND eaws.weekday = :weekday2
+            WHERE (eaws.employee_id IS NULL OR eaws.shift_id = :shift_id2)
+            ORDER BY e.name
+        ';
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([
+            'role_id' => $roleId,
+            'weekday' => $weekday,
+            'shift_id' => $shiftId,
+            'weekday2' => $weekday,
+            'shift_id2' => $shiftId,
+        ]);
+        return array_column($stmt->fetchAll(), 'name');
+    }
 }
