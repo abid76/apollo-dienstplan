@@ -9,6 +9,8 @@ use App\Repository\EmployeeRepository;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class PlanService
 {
@@ -365,6 +367,19 @@ class PlanService
             $roleCountsByDate[$date] = $counts;
         }
 
+        // Mitarbeiteranzahl pro Datum (mindestens eine Schicht)
+        $employeeCountByDate = [];
+        foreach ($dates as $date) {
+            $count = 0;
+            foreach ($employees as $employee) {
+                $entries = $grid[$employee['id']][$date] ?? [];
+                if (!empty($entries)) {
+                    $count++;
+                }
+            }
+            $employeeCountByDate[$date] = $count;
+        }
+
         $shiftsByDate = [];
         foreach ($dates as $date) {
             $byShift = [];
@@ -395,14 +410,16 @@ class PlanService
         }
 
         $spreadsheet = new Spreadsheet();
+        // Standard: vertikale Ausrichtung unten für alle Zellen der Arbeitsmappe
+        $spreadsheet->getDefaultStyle()->getAlignment()->setVertical(Alignment::VERTICAL_BOTTOM);
 
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $sheet = $weekIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
             $sheet->setTitle('Woche ' . ($weekIndex + 1));
 
-            // Kopfzeile: Zeile 1 = Wochentag/Datum (über 2 Spalten), Zeile 2 = Unterüberschriften
-            // "Mitarbeiter" steht in Zeile 2 der ersten Spalte
-            $sheet->setCellValue('A2', 'Mitarbeiter');
+            // Kopfzeile: Zeile 2 = Wochentag/Datum (über 2 Spalten), Zeile 3 = Unterüberschriften
+            // "Mitarbeiter" steht in Zeile 3 der zweiten Spalte (erste Zeile/Spalte bleiben leer)
+            $sheet->setCellValue('B3', 'Mitarbeiter');
 
             for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                 $dateIndex = $weekIndex * 7 + $dayOffset;
@@ -423,33 +440,43 @@ class PlanService
                 $weekday = (int)$dt->format('N');
                 $label = ($weekdayNames[$weekday] ?? '') . ' ' . $dt->format('d.m.');
 
-                $colTimeIndex = 2 + $dayOffset * 2;
+                $colTimeIndex = 3 + $dayOffset * 2;
                 $colRoleIndex = $colTimeIndex + 1;
                 $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
                 $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
 
-                // Zeile 1: Tages-Header über beide Spalten
-                $sheet->mergeCells($colTime . '1:' . $colRole . '1');
-                $sheet->setCellValue($colTime . '1', $label);
+                // Zeile 2: Tages-Header über beide Spalten
+                $sheet->mergeCells($colTime . '2:' . $colRole . '2');
+                $sheet->setCellValue($colTime . '2', $label);
 
-                // Zeile 2: Unterüberschriften
-                $sheet->setCellValue($colTime . '2', 'Arbeitszeit');
-                $sheet->setCellValue($colRole . '2', 'Rolle');
+                // Zeile 3: Unterüberschriften
+                $sheet->setCellValue($colTime . '3', 'Arbeitszeit');
+                $sheet->setCellValue($colRole . '3', 'Rolle');
             }
 
-            $lastCol = Coordinate::stringFromColumnIndex(1 + 7 * 2);
-            // Überschriftenzeilen 1–2 fett und zentriert
-            $headerRange = 'A1:' . $lastCol . '2';
+            $lastCol = Coordinate::stringFromColumnIndex(2 + 7 * 2);
+            // Überschriftenzeilen 2–3 fett, horizontal zentriert, vertikal unten, mit grauem Hintergrund
+            $headerRange = 'B2:' . $lastCol . '3';
             $sheet->getStyle($headerRange)->getFont()->setBold(true);
             $sheet->getStyle($headerRange)->getAlignment()
                 ->setHorizontal(Alignment::HORIZONTAL_CENTER)
-                ->setVertical(Alignment::VERTICAL_CENTER);
+                ->setVertical(Alignment::VERTICAL_BOTTOM);
+            $sheet->getStyle($headerRange)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFEFEFEF');
 
-            // Daten beginnen in Zeile 3
-            $row = 3;
+            // Dünner Rahmen unten an Zeile 2 und 3 (erste Tabellenzeilen)
+            $secondRowRange = 'B2:' . $lastCol . '2';
+            $sheet->getStyle($secondRowRange)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+            $thirdRowRange = 'B3:' . $lastCol . '3';
+            $sheet->getStyle($thirdRowRange)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
+
+            // Daten beginnen in Zeile 4
+            $row = 4;
             foreach ($employees as $employee) {
                 $employeeId = (int)$employee['id'];
-                $sheet->setCellValue('A' . $row, $employee['name'] ?? '');
+                // Mitarbeiter-Namen in die erste Daten-Spalte (B) schreiben
+                $sheet->setCellValue('B' . $row, $employee['name'] ?? '');
 
                 for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                     $dateIndex = $weekIndex * 7 + $dayOffset;
@@ -472,7 +499,7 @@ class PlanService
                         }
                     }
 
-                    $colTimeIndex = 2 + $dayOffset * 2;
+                    $colTimeIndex = 3 + $dayOffset * 2;
                     $colRoleIndex = $colTimeIndex + 1;
                     $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
                     $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
@@ -488,15 +515,34 @@ class PlanService
                 $row++;
             }
 
-            // Footer-Zeile "Rollen" / "Schichten" ergänzen
-            $footerRolesRow = $row;
-            $footerShiftsRow = $row + 1;
+            // Footer-Zeilen ergänzen: Mitarbeiteranzahl, Rollen, Schichten
+            $footerCountRow = $row;
+            $footerRolesRow = $row + 1;
+            $footerShiftsRow = $row + 2;
 
-            $sheet->setCellValue('A' . $footerRolesRow, 'Rollen');
-            $sheet->setCellValue('A' . $footerShiftsRow, 'Schichten');
+            $sheet->setCellValue('B' . $footerCountRow, 'Mitarbeiter');
+            $sheet->setCellValue('B' . $footerRolesRow, 'Rollen');
+            $sheet->setCellValue('B' . $footerShiftsRow, 'Schichten');
             // Footer-Bezeichner wie Überschrift formatieren
-            $sheet->getStyle('A' . $footerRolesRow)->getFont()->setBold(true);
-            $sheet->getStyle('A' . $footerShiftsRow)->getFont()->setBold(true);
+            $sheet->getStyle('B' . $footerCountRow)->getFont()->setBold(true);
+            $sheet->getStyle('B' . $footerRolesRow)->getFont()->setBold(true);
+            $sheet->getStyle('B' . $footerShiftsRow)->getFont()->setBold(true);
+            // Footer-Zeilen Hintergrund grau
+            $footerFullRange = 'B' . $footerCountRow . ':' . $lastCol . $footerShiftsRow;
+            $sheet->getStyle($footerFullRange)->getFill()
+                ->setFillType(Fill::FILL_SOLID)
+                ->getStartColor()->setARGB('FFEFEFEF');
+
+            // Dünner Rahmen oben an allen Footerzeilen (drittletzte, vorletzte, letzte Zeile)
+            $footerTopCountRange = 'B' . $footerCountRow . ':' . $lastCol . $footerCountRow;
+            $sheet->getStyle($footerTopCountRange)->getBorders()->getTop()->setBorderStyle(Border::BORDER_THIN);
+            $footerTopRolesRange = 'B' . $footerRolesRow . ':' . $lastCol . $footerRolesRow;
+            $sheet->getStyle($footerTopRolesRange)->getBorders()->getTop()->setBorderStyle(Border::BORDER_THIN);
+            $footerTopShiftsRange = 'B' . $footerShiftsRow . ':' . $lastCol . $footerShiftsRow;
+            $sheet->getStyle($footerTopShiftsRange)->getBorders()->getTop()->setBorderStyle(Border::BORDER_THIN);
+            // Dünner Rahmen unterhalb der letzten Zeile
+            $footerBottomShiftsRange = 'B' . $footerShiftsRow . ':' . $lastCol . $footerShiftsRow;
+            $sheet->getStyle($footerBottomShiftsRange)->getBorders()->getBottom()->setBorderStyle(Border::BORDER_THIN);
 
             for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
                 $dateIndex = $weekIndex * 7 + $dayOffset;
@@ -505,10 +551,17 @@ class PlanService
                 }
                 $dateString = $dates[$dateIndex];
 
-                $colTimeIndex = 2 + $dayOffset * 2;
+                $colTimeIndex = 3 + $dayOffset * 2;
                 $colRoleIndex = $colTimeIndex + 1;
                 $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
                 $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                // Mitarbeiteranzahl pro Datum
+                $employeeCount = $employeeCountByDate[$dateString] ?? 0;
+                $countRange = $colTime . $footerCountRow . ':' . $colRole . $footerCountRow;
+                $sheet->mergeCells($countRange);
+                $sheet->setCellValue($colTime . $footerCountRow, $employeeCount);
+                $sheet->getStyle($countRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // Rollen pro Datum
                 $roleCounts = $roleCountsByDate[$dateString] ?? [];
@@ -533,15 +586,34 @@ class PlanService
                     $shiftParts[] = ($info['time_range'] ?? '') . ': ' . $info['count'];
                 }
                 if ($shiftParts) {
-                    $range = $colTime . $footerShiftsRow . ':' . $colRole . $footerShiftsRow;
-                    $sheet->mergeCells($range);
+                    // Alle Schichten des Tages in einer Zelle mit Zeilenumbruch.
+                    // Kein Merge, damit Excel die Zeilenhöhe korrekt für alle Zeilen anpasst.
                     $sheet->setCellValue($colTime . $footerShiftsRow, implode("\n", $shiftParts));
                     $sheet->getStyle($colTime . $footerShiftsRow)->getAlignment()->setWrapText(true);
                 }
             }
 
+            // Footer-Zellen vertikal oben ausrichten
+            $footerRange = 'B' . $footerRolesRow . ':' . $lastCol . $footerShiftsRow;
+            $sheet->getStyle($footerRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+
+            // Für jeden Tag einen fetten Rahmen um den kompletten Bereich (Überschriften, Daten, Footer)
+            for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+                $colTimeIndex = 3 + $dayOffset * 2;
+                $colRoleIndex = $colTimeIndex + 1;
+                $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
+                $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                $dayRange = $colTime . '2:' . $colRole . $footerShiftsRow;
+                $sheet->getStyle($dayRange)->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+            }
+
+            // Dünner Rahmen um die gesamte Tabelle (außen)
+            $tableRange = 'B2:' . $lastCol . $footerShiftsRow;
+            $sheet->getStyle($tableRange)->getBorders()->getOutline()->setBorderStyle(Border::BORDER_THIN);
+
             // Spaltenbreite automatisch an Inhalt anpassen
-            for ($colIndex = 1; $colIndex <= 1 + 7 * 2; $colIndex++) {
+            for ($colIndex = 2; $colIndex <= 2 + 7 * 2; $colIndex++) {
                 $col = Coordinate::stringFromColumnIndex($colIndex);
                 $sheet->getColumnDimension($col)->setAutoSize(true);
             }
