@@ -121,34 +121,32 @@ class PlanService
                         shuffle($randomOrder); // Zufälligkeit für den Fall, dass die Anzahl der Einsätze gleich ist
                         usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder, $employees, $actualWeekday, $shiftId) {
 
-                            $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
-                            $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
-
-                            if ($ca === $cb) {
-                                // Falls ein Mitarbeiter an diesem Tag auf diese Schicht eingeschränkt ist (Eintrag in employee_allowed_weekday_shift)
-                                // Dann wird der Mitarbeiter mit der kleinsten Anzahl an Schichten für diesen Tag bevorzugt.
-                                // Gedanke: Wenn ein Mitarbeiter nur an diesem Tag nur eine bestimmte Schicht machen kann, dann soll er sie bekommen.
-                                // $employeeA = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $a))[0] ?? null;
-                                // $employeeB = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $b))[0] ?? null;
-                                // $aPref = 0;
-                                // $bPref = 0;
-                                // if (!empty($employeeA['allowed_weekday_shifts']) && 
-                                //     array_key_exists($actualWeekday, $employeeA['allowed_weekday_shifts']) && 
-                                //     in_array($shiftId, $employeeA['allowed_weekday_shifts'][$actualWeekday], true)) {
-                                //     $aPref = PHP_INT_MIN + count($employeeA['allowed_weekday_shifts'][$actualWeekday]);
-                                // }
-                                // if (!empty($employeeB['allowed_weekday_shifts']) && 
-                                //     array_key_exists($actualWeekday, $employeeB['allowed_weekday_shifts']) && 
-                                //     in_array($shiftId, $employeeB['allowed_weekday_shifts'][$actualWeekday], true)) {
-                                //     $bPref = PHP_INT_MIN + count($employeeB['allowed_weekday_shifts'][$actualWeekday]);
-                                // }
-
-                                // if ($aPref !== $bPref) {
-                                //     return ($aPref <=> $bPref);
-                                // }
-                                return ($randomOrder[$a] <=> $randomOrder[$b]);
+                            // Falls ein Mitarbeiter an diesem Tag auf diese Schicht eingeschränkt ist (Eintrag in employee_allowed_weekday_shift)
+                            // Dann wird der Mitarbeiter mit der kleinsten Anzahl an Schichten für diesen Tag bevorzugt.
+                            // Gedanke: Wenn ein Mitarbeiter nur an diesem Tag nur eine bestimmte Schicht machen kann, dann soll er sie bekommen.
+                            $employeeA = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $a))[0] ?? null;
+                            $employeeB = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $b))[0] ?? null;
+                            $aCount = PHP_INT_MAX;
+                            $bCount = PHP_INT_MAX;
+                            if (!empty($employeeA['allowed_weekday_shifts']) && 
+                                array_key_exists($actualWeekday, $employeeA['allowed_weekday_shifts']) && 
+                                in_array($shiftId, $employeeA['allowed_weekday_shifts'][$actualWeekday], true)) {
+                                $aCount = count($employeeA['allowed_weekday_shifts'][$actualWeekday]);
+                            }
+                            if (!empty($employeeB['allowed_weekday_shifts']) && 
+                                array_key_exists($actualWeekday, $employeeB['allowed_weekday_shifts']) && 
+                                in_array($shiftId, $employeeB['allowed_weekday_shifts'][$actualWeekday], true)) {
+                                $bCount = count($employeeB['allowed_weekday_shifts'][$actualWeekday]);
+                            }
+                            if ($aCount !== $bCount) {
+                                return ($aCount <=> $bCount);
                             }
 
+                            $ca = $assignmentsPerWeek[$a][$weekIndex] ?? 0;
+                            $cb = $assignmentsPerWeek[$b][$weekIndex] ?? 0;
+                            if ($ca === $cb) {
+                                return ($randomOrder[$a] <=> $randomOrder[$b]);
+                            }
                             return $ca <=> $cb;
                         });
 
@@ -259,10 +257,6 @@ class PlanService
             $iterations = 0;
             while (max($remainingEmployeeShifts) > 0 && $iterations < $maxIterations) {
                 $iterations++;
-                if ($iterations > $maxIterations) {
-                    throw new \Exception("Maximale Anzahl an Iterationen erreicht. Mitarbeiter nicht vollständig verteilt.");
-                    break;
-                }
                 for ($weekday = 0; $weekday < 7; $weekday++) {
                     $dayIndex = $weekIndex * 7 + $weekday;
                     $date = $start->modify("+{$dayIndex} day");
