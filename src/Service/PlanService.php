@@ -47,6 +47,7 @@ class PlanService
         $assignmentsPerWeek = [];
         $assignmentsPerEmployeeShiftPerWeek = [];
         $assignedPerDay = [];
+        $assignmentsPerWeekAndWeekend = [];
 
         $completeShiftRoleAssignment = [];
 
@@ -58,7 +59,10 @@ class PlanService
             if ($prevPlan !== null) {
                 $prevEntries = $this->plans->getEntriesWithDetails((int)$prevPlan['id']);
                 foreach ($prevEntries as $entry) {
-                    $assignedPerDay[$entry['date']][(int)$entry['employee_id']] = (int)$entry['role_id'];
+                    // Wir befüllen nur Tage, die nicht in diesen Dienstplan fallen
+                    if ($entry['date'] < $startDate) {
+                        $assignedPerDay[$entry['date']][(int)$entry['employee_id']] = (int)$entry['role_id'];
+                    }
                 }
             }
 
@@ -103,6 +107,7 @@ class PlanService
                                 $weekIndex,
                                 $assignmentsPerEmployeeShiftPerWeek,
                                 $assignmentsPerWeek,
+                                $assignmentsPerWeekAndWeekend,
                                 $assignedPerDay
                             )) {
                                 continue;
@@ -155,6 +160,10 @@ class PlanService
                         foreach ($selected as $employeeId) {
                             $assignmentsPerWeek[$employeeId][$weekIndex] =
                                 ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                            if ($actualWeekday >= 5) { // Samstag (5) oder Sonntag (6)
+                                $assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] =
+                                    ($assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] ?? 0) + 1;
+                            }
                             $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
                                 ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                             $assignedPerDay[$dateString][$employeeId] = $roleId;
@@ -216,6 +225,7 @@ class PlanService
                             $weekIndex,
                             $assignmentsPerEmployeeShiftPerWeek,
                             $assignmentsPerWeek,
+                            $assignmentsPerWeekAndWeekend,
                             $assignedPerDay
                         )) {
                             continue;
@@ -231,6 +241,10 @@ class PlanService
                         $assignedPerDay[$dateString][$employeeId] = $roleId;
                         $assignmentsPerWeek[$employeeId][$weekIndex] =
                             ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                        if ($actualWeekday >= 5) { // Samstag (5) oder Sonntag (6)
+                            $assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] =
+                                ($assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] ?? 0) + 1;
+                        }
                         $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
                             ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                         $remainingEmployeeShifts[$employeeId]--;
@@ -294,6 +308,7 @@ class PlanService
                                     $weekIndex,
                                     $assignmentsPerEmployeeShiftPerWeek,
                                     $assignmentsPerWeek,
+                                    $assignmentsPerWeekAndWeekend,
                                     $assignedPerDay
                                 )) {
                                     continue;
@@ -337,6 +352,10 @@ class PlanService
                             foreach ($selected as $employeeId) {
                                 $assignmentsPerWeek[$employeeId][$weekIndex] =
                                     ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
+                                if ($actualWeekday >= 5) { // Samstag (5) oder Sonntag (6)
+                                    $assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] =
+                                        ($assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] ?? 0) + 1;
+                                }
                                 $assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] =
                                     ($assignmentsPerEmployeeShiftPerWeek[$employeeId][$shiftId][$weekIndex] ?? 0) + 1;
                                 $assignedPerDay[$dateString][$employeeId] = $roleId;
@@ -694,6 +713,7 @@ class PlanService
         int $weekIndex,
         array $assignmentsPerEmployeeShiftPerWeek,
         array $assignmentsPerWeek,
+        array $assignmentsPerWeekAndWeekend,
         array $assignedPerDay
     ): bool {
         $employeeId = (int)$employee['id'];
@@ -728,11 +748,20 @@ class PlanService
 
         $allowedShiftsToday = $employee['allowed_weekday_shifts'][$actualWeekday] ?? [];
         if (!empty($allowedShiftsToday) && !in_array($shiftId, $allowedShiftsToday, true)) {
+            if ($employeeId === 33 && $actualWeekday < 5 && $shiftId === 2 && $roleId === 3) {
+                error_log('Day ' . $dateString . ', not allowed allowed shifts today: ' . print_r($employee, true));
+            }
             return false;
         }
 
         $currentWeekCount = $assignmentsPerWeek[$employeeId][$weekIndex] ?? 0;
         if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+            return false;
+        }
+
+        // Nur eine Schicht am Wochenende erlaubt
+        $currentWeekendCount = $assignmentsPerWeekAndWeekend[$employeeId][$weekIndex] ?? 0;
+        if ($actualWeekday >= 5 && $currentWeekendCount >= 1) {
             return false;
         }
 
