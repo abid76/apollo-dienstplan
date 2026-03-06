@@ -376,6 +376,7 @@ class PlanService
         $employees = $data['employees'];
         $dates = $data['dates'];
         $grid = $data['grid'];
+        $employeeHolidays = $data['employeeHolidays'] ?? [];
 
         // Aggregationen wie in der HTML-Ansicht (Footer "Rollen" / "Schichten")
         $roleCountsByDate = [];
@@ -534,10 +535,20 @@ class PlanService
                     $colTime = Coordinate::stringFromColumnIndex($colTimeIndex);
                     $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
 
-                    if ($times) {
+                    $isOnHoliday = !empty($employeeHolidays[$employeeId][$dateString] ?? false);
+
+                    if ($isOnHoliday) {
+                        $holidayRange = $colTime . $row . ':' . $colRole . $row;
+                        $sheet->getStyle($holidayRange)->getFill()
+                            ->setFillType(Fill::FILL_SOLID)
+                            ->getStartColor()->setARGB('FFEFEFEF');
+                    } elseif ($times) {
                         $sheet->setCellValue($colTime . $row, implode(', ', $times));
                     }
-                    if ($roles) {
+                    if ($isOnHoliday) {
+                        $sheet->setCellValue($colRole . $row, 'U');
+                        $sheet->getStyle($colRole . $row)->getFont()->getColor()->setARGB('FF888888');
+                    } elseif ($roles) {
                         $sheet->setCellValue($colRole . $row, implode(', ', $roles));
                     }
                 }
@@ -817,6 +828,7 @@ class PlanService
         for ($i = 0; $i < $totalDays; $i++) {
             $dateList[] = $start->modify("+{$i} day")->format('Y-m-d');
         }
+        $dateSet = array_flip($dateList);
 
         $employees = [];
         $grid = [];
@@ -838,6 +850,31 @@ class PlanService
                 'role_name' => $entry['role_name'],
                 'shortcode' => $entry['shortcode'],
             ];
+        }
+
+        // Urlaubstage pro Mitarbeiter/Datum innerhalb des Planzeitraums ermitteln
+        $employeeHolidays = [];
+        if ($totalDays > 0) {
+            $planEnd = $start->modify('+' . ($totalDays - 1) . ' days');
+            $holidays = $this->holidays->findByDateRange(
+                $start->format('Y-m-d'),
+                $planEnd->format('Y-m-d')
+            );
+
+            foreach ($holidays as $holiday) {
+                $empId = (int)$holiday['employee_id'];
+                $from = new \DateTimeImmutable($holiday['date_from']);
+                $to = new \DateTimeImmutable($holiday['date_to']);
+
+                $current = $from;
+                while ($current <= $to) {
+                    $dateString = $current->format('Y-m-d');
+                    if (isset($dateSet[$dateString])) {
+                        $employeeHolidays[$empId][$dateString] = true;
+                    }
+                    $current = $current->modify('+1 day');
+                }
+            }
         }
 
         // Wochenweise Zählung der Schichten pro Mitarbeiter
@@ -968,6 +1005,7 @@ class PlanService
             'employees' => $employees,
             'dates' => $dateList,
             'grid' => $grid,
+            'employeeHolidays' => $employeeHolidays,
             'employeeWeeklyShiftCounts' => $employeeWeeklyShiftCounts,
             'employeeUnderloadWarnings' => $employeeUnderloadWarnings,
             'coverageWarnings' => $coverageWarnings,

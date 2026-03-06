@@ -195,16 +195,29 @@ if (!empty($plan['start_date'])) {
             </td>
             <?php foreach ($dates as $date): ?>
                 <?php
-                $entries = $grid[$employee['id']][$date] ?? [];
+                $employeeId = (int)($employee['id'] ?? 0);
+                $entries = $grid[$employeeId][$date] ?? [];
                 $times = [];
                 $roles = [];
                 foreach ($entries as $entry) {
                     $times[] = formatTimeRange($entry['time_from'] ?? '', $entry['time_to'] ?? '');
                     $roles[] = $entry['shortcode'] ?? '';
                 }
+                $isOnHoliday = !empty($employeeHolidays[$employeeId][$date] ?? false);
+                $holidayStyle = $isOnHoliday ? 'background-color: #f3f3f3;' : '';
                 ?>
-                <td><?php echo htmlspecialchars(implode(', ', $times), ENT_QUOTES, 'UTF-8'); ?></td>
-                <td><?php echo htmlspecialchars(implode(', ', $roles), ENT_QUOTES, 'UTF-8'); ?></td>
+                <td style="<?php echo $holidayStyle; ?>">
+                    <?php if (!$isOnHoliday): ?>
+                        <?php echo htmlspecialchars(implode(', ', $times), ENT_QUOTES, 'UTF-8'); ?>
+                    <?php endif; ?>
+                </td>
+                <td style="<?php echo $holidayStyle; ?>">
+                    <?php if ($isOnHoliday): ?>
+                        <span style="color: #888;">U</span>
+                    <?php else: ?>
+                        <?php echo htmlspecialchars(implode(', ', $roles), ENT_QUOTES, 'UTF-8'); ?>
+                    <?php endif; ?>
+                </td>
             <?php endforeach; ?>
         </tr>
     <?php endforeach; ?>
