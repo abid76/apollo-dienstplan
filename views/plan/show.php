@@ -110,23 +110,8 @@ if (!empty($dates)) {
     <?php if ($planPeriod !== ''): ?>
         <?php echo htmlspecialchars($planPeriod, ENT_QUOTES, 'UTF-8'); ?>
     <?php endif; ?>
+    (<?php echo (int)$plan['weeks']; ?> Wochen)
 </h1>
-
-<?php
-$formattedStartDate = '';
-if (!empty($plan['start_date'])) {
-    try {
-        $start = new DateTime($plan['start_date']);
-        $formattedStartDate = $start->format('d.m.Y');
-    } catch (Exception $e) {
-        $formattedStartDate = (string)$plan['start_date'];
-    }
-}
-?>
-<p>
-    Startdatum: <?php echo htmlspecialchars($formattedStartDate, ENT_QUOTES, 'UTF-8'); ?><br>
-    Wochen: <?php echo (int)$plan['weeks']; ?>
-</p>
 
 <p>
     <a href="<?= BASE_PATH ?>/plan/export?id=<?= (int)$plan['id'] ?>">Excel-Export</a>
