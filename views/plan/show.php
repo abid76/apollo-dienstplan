@@ -72,12 +72,42 @@ foreach ($dates as $date) {
 $employeeWeeklyShiftCounts = $employeeWeeklyShiftCounts ?? [];
 $employeeUnderloadWarnings = $employeeUnderloadWarnings ?? [];
 $coverageWarnings = $coverageWarnings ?? [];
+
+$planPeriod = '';
+if (!empty($dates)) {
+    $firstDate = reset($dates);
+    $lastDate = end($dates);
+    try {
+        $first = new DateTime($firstDate);
+        $last = new DateTime($lastDate);
+        $planPeriod = $first->format('d.m.Y') . ' – ' . $last->format('d.m.Y');
+    } catch (Exception $e) {
+        // Fallback: Zeitraum nicht formatieren, falls Datum ungültig ist
+        $planPeriod = '';
+    }
+}
 ?>
 
-<h1>Dienstplan #<?php echo (int)$plan['id']; ?></h1>
+<h1>
+    Dienstplan
+    <?php if ($planPeriod !== ''): ?>
+        <?php echo htmlspecialchars($planPeriod, ENT_QUOTES, 'UTF-8'); ?>
+    <?php endif; ?>
+</h1>
 
+<?php
+$formattedStartDate = '';
+if (!empty($plan['start_date'])) {
+    try {
+        $start = new DateTime($plan['start_date']);
+        $formattedStartDate = $start->format('d.m.Y');
+    } catch (Exception $e) {
+        $formattedStartDate = (string)$plan['start_date'];
+    }
+}
+?>
 <p>
-    Startdatum: <?php echo htmlspecialchars($plan['start_date'], ENT_QUOTES, 'UTF-8'); ?><br>
+    Startdatum: <?php echo htmlspecialchars($formattedStartDate, ENT_QUOTES, 'UTF-8'); ?><br>
     Wochen: <?php echo (int)$plan['weeks']; ?>
 </p>
 
