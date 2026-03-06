@@ -542,13 +542,12 @@ class PlanService
                         $sheet->getStyle($holidayRange)->getFill()
                             ->setFillType(Fill::FILL_SOLID)
                             ->getStartColor()->setARGB('FFEFEFEF');
+                        $sheet->setCellValue($colTime . $row, 'U');
+                        $sheet->getStyle($colTime . $row)->getFont()->getColor()->setARGB('FF888888');
                     } elseif ($times) {
                         $sheet->setCellValue($colTime . $row, implode(', ', $times));
                     }
-                    if ($isOnHoliday) {
-                        $sheet->setCellValue($colRole . $row, 'U');
-                        $sheet->getStyle($colRole . $row)->getFont()->getColor()->setARGB('FF888888');
-                    } elseif ($roles) {
+                    if ($roles) {
                         $sheet->setCellValue($colRole . $row, implode(', ', $roles));
                     }
                 }

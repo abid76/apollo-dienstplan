@@ -207,16 +207,14 @@ if (!empty($plan['start_date'])) {
                 $holidayStyle = $isOnHoliday ? 'background-color: #f3f3f3;' : '';
                 ?>
                 <td style="<?php echo $holidayStyle; ?>">
-                    <?php if (!$isOnHoliday): ?>
+                    <?php if ($isOnHoliday): ?>
+                        <span style="color: #888;">U</span>
+                    <?php else: ?>
                         <?php echo htmlspecialchars(implode(', ', $times), ENT_QUOTES, 'UTF-8'); ?>
                     <?php endif; ?>
                 </td>
                 <td style="<?php echo $holidayStyle; ?>">
-                    <?php if ($isOnHoliday): ?>
-                        <span style="color: #888;">U</span>
-                    <?php else: ?>
-                        <?php echo htmlspecialchars(implode(', ', $roles), ENT_QUOTES, 'UTF-8'); ?>
-                    <?php endif; ?>
+                    <?php echo htmlspecialchars(implode(', ', $roles), ENT_QUOTES, 'UTF-8'); ?>
                 </td>
             <?php endforeach; ?>
         </tr>
