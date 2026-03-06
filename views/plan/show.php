@@ -73,6 +73,23 @@ $employeeWeeklyShiftCounts = $employeeWeeklyShiftCounts ?? [];
 $employeeUnderloadWarnings = $employeeUnderloadWarnings ?? [];
 $coverageWarnings = $coverageWarnings ?? [];
 
+// Wochen gruppieren (jede Woche = 7 Tage ab Start)
+$weeks = [];
+$chunked = array_chunk($dates, 7);
+foreach ($chunked as $weekIndex => $weekDates) {
+    if (empty($weekDates)) {
+        continue;
+    }
+    $first = new DateTime(reset($weekDates));
+    $last = new DateTime(end($weekDates));
+    $weeks[] = [
+        'index' => $weekIndex,
+        'label' => 'KW ' . $first->format('W') . ' (' . $first->format('d.m.') . '–' . $last->format('d.m.') . ')',
+        'dates' => $weekDates,
+    ];
+}
+$hasMultipleWeeks = count($weeks) > 1;
+
 $planPeriod = '';
 if (!empty($dates)) {
     $firstDate = reset($dates);
@@ -167,12 +184,35 @@ if (!empty($plan['start_date'])) {
 .plan-table td:first-child { white-space: nowrap; }
 .plan-table tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }
 .plan-table .shift-line { margin-bottom: 2px; }
-.plan-table .shift-toggle { margin-left: 6px; cursor: pointer; }</style>
-<table class="plan-table">
+.plan-table .shift-toggle { margin-left: 6px; cursor: pointer; }
+.plan-week-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+.plan-week-tab { padding: 8px 14px; border: 1px solid #ccc; background: #f5f5f5; cursor: pointer; border-radius: 4px; font-size: 14px; }
+.plan-week-tab:hover { background: #eee; }
+.plan-week-tab.active { background: #fff; border-color: #333; font-weight: 600; }
+.plan-week-panel { display: none; }
+.plan-week-panel.active { display: block; }
+</style>
+
+<?php if ($hasMultipleWeeks): ?>
+<div class="plan-week-tabs" role="tablist">
+    <?php foreach ($weeks as $w): ?>
+        <button type="button" role="tab" class="plan-week-tab <?= $w['index'] === 0 ? 'active' : '' ?>" data-week="<?= (int)$w['index'] ?>" aria-selected="<?= $w['index'] === 0 ? 'true' : 'false' ?>"><?php echo htmlspecialchars($w['label'], ENT_QUOTES, 'UTF-8'); ?></button>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>
+
+<?php
+$displayDates = $dates;
+?>
+<?php if ($hasMultipleWeeks): ?>
+    <?php foreach ($weeks as $week): ?>
+        <?php $displayDates = $week['dates']; ?>
+        <div class="plan-week-panel <?= $week['index'] === 0 ? 'active' : '' ?>" id="plan-week-<?= (int)$week['index'] ?>" data-week-index="<?= (int)$week['index'] ?>" role="tabpanel">
+            <table class="plan-table">
     <thead>
     <tr>
         <th rowspan="2">Mitarbeiter</th>
-        <?php foreach ($dates as $date): ?>
+        <?php foreach ($displayDates as $date): ?>
             <?php $dt = new DateTime($date);
             $w = (int)$dt->format('N');
             $label = $weekdayNames[$w] . ' ' . $dt->format('d.m.');
@@ -181,7 +221,7 @@ if (!empty($plan['start_date'])) {
         <?php endforeach; ?>
     </tr>
     <tr>
-        <?php foreach ($dates as $date): ?>
+        <?php foreach ($displayDates as $date): ?>
             <th style="text-align: center;">Arbeitszeit</th>
             <th style="text-align: center;">Rolle</th>
         <?php endforeach; ?>
@@ -193,7 +233,7 @@ if (!empty($plan['start_date'])) {
             <td>
                 <?php echo htmlspecialchars($employee['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
             </td>
-            <?php foreach ($dates as $date): ?>
+            <?php foreach ($displayDates as $date): ?>
                 <?php
                 $employeeId = (int)($employee['id'] ?? 0);
                 $entries = $grid[$employeeId][$date] ?? [];
@@ -223,14 +263,14 @@ if (!empty($plan['start_date'])) {
     <tfoot>
     <tr>
         <th style="text-align: left;">Mitarbeiter</th>
-        <?php foreach ($dates as $date): ?>
+        <?php foreach ($displayDates as $date): ?>
             <?php $count = $employeeCountByDate[$date] ?? 0; ?>
             <td colspan="2" style="text-align: center;"><?php echo (int)$count; ?></td>
         <?php endforeach; ?>
     </tr>
     <tr>
         <th style="text-align: left;">Rollen</th>
-        <?php foreach ($dates as $date): ?>
+        <?php foreach ($displayDates as $date): ?>
             <?php
             $counts = $roleCountsByDate[$date] ?? [];
             $parts = [];
@@ -243,7 +283,7 @@ if (!empty($plan['start_date'])) {
     </tr>
     <tr>
         <th style="text-align: left;">Schichten</th>
-        <?php foreach ($dates as $date): ?>
+        <?php foreach ($displayDates as $date): ?>
             <?php
             $shifts = $shiftsByDate[$date] ?? [];
             uasort($shifts, fn($a, $b) => ($a['time_from'] ?? '') <=> ($b['time_from'] ?? ''));
@@ -284,6 +324,126 @@ if (!empty($plan['start_date'])) {
     </tr>
     </tfoot>
 </table>
+        </div>
+    <?php endforeach; ?>
+<?php else: ?>
+    <table class="plan-table">
+    <thead>
+    <tr>
+        <th rowspan="2">Mitarbeiter</th>
+        <?php foreach ($displayDates as $date): ?>
+            <?php $dt = new DateTime($date);
+            $w = (int)$dt->format('N');
+            $label = $weekdayNames[$w] . ' ' . $dt->format('d.m.');
+            ?>
+            <th colspan="2" style="text-align: center;"><?php echo htmlspecialchars($label, ENT_QUOTES, 'UTF-8'); ?></th>
+        <?php endforeach; ?>
+    </tr>
+    <tr>
+        <?php foreach ($displayDates as $date): ?>
+            <th style="text-align: center;">Arbeitszeit</th>
+            <th style="text-align: center;">Rolle</th>
+        <?php endforeach; ?>
+    </tr>
+    </thead>
+    <tbody>
+    <?php foreach ($employees as $employee): ?>
+        <tr>
+            <td>
+                <?php echo htmlspecialchars($employee['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>
+            </td>
+            <?php foreach ($displayDates as $date): ?>
+                <?php
+                $employeeId = (int)($employee['id'] ?? 0);
+                $entries = $grid[$employeeId][$date] ?? [];
+                $times = [];
+                $roles = [];
+                foreach ($entries as $entry) {
+                    $times[] = formatTimeRange($entry['time_from'] ?? '', $entry['time_to'] ?? '');
+                    $roles[] = $entry['shortcode'] ?? '';
+                }
+                $isOnHoliday = !empty($employeeHolidays[$employeeId][$date] ?? false);
+                $holidayStyle = $isOnHoliday ? 'background-color: #f3f3f3;' : '';
+                ?>
+                <td style="<?php echo $holidayStyle; ?>">
+                    <?php if ($isOnHoliday): ?>
+                        <span style="color: #888;">U</span>
+                    <?php else: ?>
+                        <?php echo htmlspecialchars(implode(', ', $times), ENT_QUOTES, 'UTF-8'); ?>
+                    <?php endif; ?>
+                </td>
+                <td style="<?php echo $holidayStyle; ?>">
+                    <?php echo htmlspecialchars(implode(', ', $roles), ENT_QUOTES, 'UTF-8'); ?>
+                </td>
+            <?php endforeach; ?>
+        </tr>
+    <?php endforeach; ?>
+    </tbody>
+    <tfoot>
+    <tr>
+        <th style="text-align: left;">Mitarbeiter</th>
+        <?php foreach ($displayDates as $date): ?>
+            <?php $count = $employeeCountByDate[$date] ?? 0; ?>
+            <td colspan="2" style="text-align: center;"><?php echo (int)$count; ?></td>
+        <?php endforeach; ?>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Rollen</th>
+        <?php foreach ($displayDates as $date): ?>
+            <?php
+            $counts = $roleCountsByDate[$date] ?? [];
+            $parts = [];
+            foreach ($counts as $shortcode => $n) {
+                $parts[] = htmlspecialchars($shortcode, ENT_QUOTES, 'UTF-8') . ': ' . $n;
+            }
+            ?>
+            <td colspan="2" style="text-align: left;"><?php echo implode(', ', $parts); ?></td>
+        <?php endforeach; ?>
+    </tr>
+    <tr>
+        <th style="text-align: left;">Schichten</th>
+        <?php foreach ($displayDates as $date): ?>
+            <?php
+            $shifts = $shiftsByDate[$date] ?? [];
+            uasort($shifts, fn($a, $b) => ($a['time_from'] ?? '') <=> ($b['time_from'] ?? ''));
+            ?>
+            <td colspan="2" style="text-align: left;">
+                <?php
+                $shiftIndex = 0;
+                foreach ($shifts as $info) {
+                    $shiftIndex++;
+                    $detailsId = 'shift-details-' . $date . '-' . $shiftIndex;
+                    $timeRange = htmlspecialchars($info['time_range'], ENT_QUOTES, 'UTF-8');
+                    $count = (int)($info['count'] ?? 0);
+                    $names = array_unique($info['names'] ?? []);
+                    $escapedNames = array_map(
+                        fn($n) => htmlspecialchars($n, ENT_QUOTES, 'UTF-8'),
+                        array_filter($names, fn($n) => $n !== '')
+                    );
+                    $namesText = implode(', ', $escapedNames);
+                    ?>
+                    <div class="shift-line">
+                        <span><?php echo $timeRange; ?>: <?php echo $count; ?></span>
+                        <?php if ($namesText !== ''): ?>
+                            <button type="button"
+                                    class="shift-toggle"
+                                    data-target="<?php echo htmlspecialchars($detailsId, ENT_QUOTES, 'UTF-8'); ?>">
+                                +
+                            </button>
+                            <div id="<?php echo htmlspecialchars($detailsId, ENT_QUOTES, 'UTF-8'); ?>"
+                                 class="shift-details"
+                                 style="display: none; margin-left: 1.5em;">
+                                <?php echo $namesText; ?>
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                <?php } ?>
+            </td>
+        <?php endforeach; ?>
+    </tr>
+    </tfoot>
+</table>
+<?php endif; ?>
 
 <script>
 document.addEventListener('click', function (event) {
@@ -302,6 +462,25 @@ document.addEventListener('click', function (event) {
     const isHidden = details.style.display === '' || details.style.display === 'none';
     details.style.display = isHidden ? 'block' : 'none';
     btn.textContent = isHidden ? '−' : '+';
+});
+
+document.querySelectorAll('.plan-week-tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+        const weekIndex = this.getAttribute('data-week');
+        document.querySelectorAll('.plan-week-tab').forEach(function (t) {
+            t.classList.remove('active');
+            t.setAttribute('aria-selected', 'false');
+        });
+        document.querySelectorAll('.plan-week-panel').forEach(function (p) {
+            p.classList.remove('active');
+        });
+        this.classList.add('active');
+        this.setAttribute('aria-selected', 'true');
+        const panel = document.getElementById('plan-week-' + weekIndex);
+        if (panel) {
+            panel.classList.add('active');
+        }
+    });
 });
 </script>
 

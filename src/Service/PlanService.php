@@ -444,7 +444,18 @@ class PlanService
 
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $sheet = $weekIndex === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
-            $sheet->setTitle('Woche ' . ($weekIndex + 1));
+            // Gleiche Beschriftung wie die Tabs in der Web-Ansicht: "KW 11 (09.03.–15.03.)"
+            $weekStartIndex = $weekIndex * 7;
+            $weekDates = array_slice($dates, $weekStartIndex, 7);
+            $sheetTitle = 'Woche ' . ($weekIndex + 1);
+            if (count($weekDates) >= 2) {
+                $first = new \DateTimeImmutable($weekDates[0]);
+                $last = new \DateTimeImmutable($weekDates[count($weekDates) - 1]);
+                $sheetTitle = 'KW ' . $first->format('W') . ' (' . $first->format('d.m.') . '–' . $last->format('d.m.') . ')';
+                // Excel-Blattnamen: max. 31 Zeichen, keine Zeichen \ / * ? : [ ]
+                $sheetTitle = substr(str_replace(['\\', '/', '*', '?', ':', '[', ']'], '', $sheetTitle), 0, 31);
+            }
+            $sheet->setTitle($sheetTitle);
             // Zoomfaktor auf 110 % setzen
             $sheet->getSheetView()->setZoomScale(110);
 
