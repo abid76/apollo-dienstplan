@@ -40,12 +40,12 @@ mysql -u dienstplan -p dienstplan < sql/migration_rule_required_count_exact.sql
 # Auf dem Server – je nach Setup z.B.:
 # Eigenes Verzeichnis (eigene Domain/Subdomain):
 cd /var/www
-git clone <URL-DES-REPOS> dienstplan
+git clone <URL-DES-REPOS> apollo-dienstplan
 cd dienstplan
 
 # Oder Unterverzeichnis auf bestehendem Server (z.B. neben anderen Apps):
 cd /var/www/html
-git clone <URL-DES-REPOS> dienstplan
+git clone <URL-DES-REPOS> apollo-dienstplan
 cd dienstplan
 ```
 
@@ -55,7 +55,7 @@ cd dienstplan
 # Von deinem Rechner (ohne vendor/ – wird auf dem Server installiert)
 # Zielpfad = gewünschtes Unterverzeichnis auf dem Server, z.B. dienstplan
 rsync -avz --exclude 'vendor' --exclude '.git' \
-  ./ user@server:/var/www/html/dienstplan/
+  ./ user@server:/var/www/html/apollo-dienstplan/
 ```
 
 ---
@@ -63,7 +63,7 @@ rsync -avz --exclude 'vendor' --exclude '.git' \
 ## 3. Auf dem Server ausführen
 
 ```bash
-cd /var/www/dienstplan
+cd /var/www/apollo-dienstplan
 
 # Composer-Abhängigkeiten installieren (Produktion)
 composer install --no-dev --optimize-autoloader
@@ -92,10 +92,10 @@ export DB_PASSWORD=SICHERES_PASSWORT
 **Deployment in einem Unterverzeichnis:** Wenn die Anwendung z. B. unter `https://example.com/dienstplan/` erreichbar sein soll, muss der Basis-Pfad gesetzt werden (ohne abschließenden Schrägstrich):
 
 ```bash
-export BASE_PATH=/dienstplan
+export BASE_PATH=/apollo-dienstplan
 ```
 
-Oder in `config/config.php`: `'base_path' => '/dienstplan'`.
+Oder in `config/config.php`: `'base_path' => '/apollo-dienstplan'`.
 
 Falls keine Umgebungsvariablen gesetzt sind, werden die Werte aus der `config/config.php` verwendet. Dort solltest du für den Server die echten Zugangsdaten eintragen und den Zugriff einschränken:
 
@@ -116,9 +116,9 @@ chmod 600 config/config.php
 ```apache
 <VirtualHost *:80>
     ServerName dienstplan.example.com
-    DocumentRoot /var/www/dienstplan/public
+    DocumentRoot /var/www/apollo-dienstplan/public
 
-    <Directory /var/www/dienstplan/public>
+    <Directory /var/www/apollo-dienstplan/public>
         AllowOverride All
         Require all granted
     </Directory>
@@ -158,7 +158,7 @@ server {
 
 ### Variante B: Unterverzeichnis auf bestehendem Server
 
-Die App liegt z. B. unter `https://example.com/dienstplan/` neben anderen Anwendungen.
+Die App liegt z. B. unter `https://example.com/apollo-dienstplan/` neben anderen Anwendungen.
 
 #### Apache
 
@@ -166,9 +166,9 @@ Entweder **Alias** auf das `public`-Verzeichnis der App:
 
 ```apache
 # DocumentRoot ist z.B. /var/www/html
-Alias /dienstplan /var/www/html/dienstplan/public
+Alias /apollo-dienstplan /var/www/html/apollo-dienstplan/public
 
-<Directory /var/www/html/dienstplan/public>
+<Directory /var/www/html/apollo-dienstplan/public>
     AllowOverride All
     Require all granted
 </Directory>
@@ -177,12 +177,12 @@ Alias /dienstplan /var/www/html/dienstplan/public
 Dann in **`public/.htaccess`** die Zeile anpassen:
 
 ```apache
-RewriteBase /dienstplan/
+RewriteBase /apollo-dienstplan/
 ```
 
 (statt `RewriteBase /`).
 
-**Wichtig:** In der Konfiguration **BASE_PATH** setzen: Umgebungsvariable `BASE_PATH=/dienstplan` oder in `config/config.php`: `'base_path' => '/dienstplan'`.
+**Wichtig:** In der Konfiguration **BASE_PATH** setzen: Umgebungsvariable `BASE_PATH=/apollo-dienstplan` oder in `config/config.php`: `'base_path' => '/apollo-dienstplan'`.
 
 #### Nginx
 
@@ -194,26 +194,26 @@ server {
 
     # … andere location-Blöcke für andere Apps …
 
-    location /dienstplan {
-        alias /var/www/html/dienstplan/public;
+    location /apollo-dienstplan {
+        alias /var/www/html/apollo-dienstplan/public;
         index index.php;
-        try_files $uri $uri/ @dienstplan;
+        try_files $uri $uri/ @apollo-dienstplan;
     }
-    location @dienstplan {
-        rewrite ^/dienstplan(.*)$ /dienstplan/index.php?$query_string last;
-        # Alternativ: fastcgi mit SCRIPT_FILENAME auf .../dienstplan/public/index.php
+    location @apollo-dienstplan {
+        rewrite ^/apollo-dienstplan(.*)$ /apollo-dienstplan/index.php?$query_string last;
+        # Alternativ: fastcgi mit SCRIPT_FILENAME auf .../apollo-dienstplan/public/index.php
     }
-    location ~ ^/dienstplan/index\.php$ {
+    location ~ ^/apollo-dienstplan/index\.php$ {
         fastcgi_pass unix:/run/php/php8.2-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME /var/www/html/dienstplan/public/index.php;
+        fastcgi_param SCRIPT_FILENAME /var/www/html/apollo-dienstplan/public/index.php;
         include fastcgi_params;
     }
 }
 ```
 
-Oder mit **location /dienstplan/** und `fastcgi_param SCRIPT_FILENAME` so setzen, dass `index.php` im App-`public`-Verzeichnis aufgerufen wird. PHP-FPM-Socket-Pfad je nach System anpassen.
+Oder mit **location /apollo-dienstplan/** und `fastcgi_param SCRIPT_FILENAME` so setzen, dass `index.php` im App-`public`-Verzeichnis aufgerufen wird. PHP-FPM-Socket-Pfad je nach System anpassen.
 
-**Konfiguration:** `BASE_PATH=/dienstplan` (Umgebungsvariable oder `config/config.php`).
+**Konfiguration:** `BASE_PATH=/apollo-dienstplan` (Umgebungsvariable oder `config/config.php`).
 
 #### Unterverzeichnis neben WordPress (Root-`.htaccess` leitet alles um)
 
@@ -240,11 +240,11 @@ Ersetze `/apollo-dienstplan/` durch den tatsächlichen URL-Prefix der App (mit S
 
 ```bash
 # Webserver-Benutzer (z.B. www-data) muss lesen können
-sudo chown -R www-data:www-data /var/www/dienstplan
+sudo chown -R www-data:www-data /var/www/apollo-dienstplan
 
 # config/ nicht über das Web erreichbar machen (Apache/Nginx root = public/)
 # Berechtigungen für Konfiguration
-chmod 600 /var/www/dienstplan/config/config.php
+chmod 600 /var/www/apollo-dienstplan/config/config.php
 ```
 
 Da der DocumentRoot auf `public/` zeigt, sind `config/`, `src/` und `sql/` nicht direkt über den Browser erreichbar.
@@ -253,8 +253,8 @@ Da der DocumentRoot auf `public/` zeigt, sind `config/`, `src/` und `sql/` nicht
 
 ## 7. Nach dem Deployment prüfen
 
-- **Eigene Domain:** Startseite `https://dienstplan.example.com/`, Bereiche `/shifts`, `/roles`, usw.
-- **Unterverzeichnis:** Startseite `https://example.com/dienstplan/`, Bereiche `.../dienstplan/shifts`, usw.
+- **Eigene Domain:** Startseite `https://apollo-dienstplan.example.com/`, Bereiche `/shifts`, `/roles`, usw.
+- **Unterverzeichnis:** Startseite `https://example.com/apollo-dienstplan/`, Bereiche `.../apollo-dienstplan/shifts`, usw.
 - Keine PHP-Fehler und keine Anzeige von Pfaden/Passwörtern (in Produktion `display_errors` aus).
 
 ---
@@ -265,6 +265,6 @@ Da der DocumentRoot auf `public/` zeigt, sind `config/`, `src/` und `sql/` nicht
 - [ ] Code auf Server (git clone oder rsync)
 - [ ] `composer install --no-dev --optimize-autoloader`
 - [ ] `config/config.php` mit Server-DB-Zugangsdaten (oder Umgebungsvariablen)
-- [ ] **Unterverzeichnis:** `BASE_PATH` gesetzt (z. B. `/dienstplan`), in Apache `RewriteBase /dienstplan/` in `public/.htaccess`
+- [ ] **Unterverzeichnis:** `BASE_PATH` gesetzt (z. B. `/apollo-dienstplan`), in Apache `RewriteBase /apollo-dienstplan/` in `public/.htaccess`
 - [ ] DocumentRoot/Alias zeigt auf `public/`, Rewrite auf `index.php`
 - [ ] Rechte für Webserver-Benutzer, `config/config.php` geschützt (z. B. chmod 600)
