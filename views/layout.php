@@ -28,8 +28,9 @@
             <a href="<?= BASE_PATH ?>/">Übersicht</a>
             <a href="<?= BASE_PATH ?>/shifts">Schichten</a>
             <a href="<?= BASE_PATH ?>/roles">Rollen</a>
-            <a href="<?= BASE_PATH ?>/employees">Mitarbeiter</a>
             <a href="<?= BASE_PATH ?>/rules">Regeln</a>
+            <a href="<?= BASE_PATH ?>/employees">Mitarbeiter</a>
+            <a href="<?= BASE_PATH ?>/holidays">Urlaub</a>
             <a href="<?= BASE_PATH ?>/plan">Dienstplan</a>
         </nav>
     </header>

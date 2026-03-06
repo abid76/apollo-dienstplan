@@ -8,6 +8,7 @@ use App\Controller\RoleController;
 use App\Controller\EmployeeController;
 use App\Controller\RuleController;
 use App\Controller\PlanController;
+use App\Controller\HolidayController;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -61,6 +62,14 @@ $router->post('/employees/create', [new EmployeeController(), 'store']);
 $router->get('/employees/edit', [new EmployeeController(), 'edit']);
 $router->post('/employees/edit', [new EmployeeController(), 'update']);
 $router->post('/employees/delete', [new EmployeeController(), 'delete']);
+
+// Holidays
+$router->get('/holidays', [new HolidayController(), 'index']);
+$router->get('/holidays/create', [new HolidayController(), 'create']);
+$router->post('/holidays/create', [new HolidayController(), 'store']);
+$router->get('/holidays/edit', [new HolidayController(), 'edit']);
+$router->post('/holidays/edit', [new HolidayController(), 'update']);
+$router->post('/holidays/delete', [new HolidayController(), 'delete']);
 
 // Rules
 $router->get('/rules', [new RuleController(), 'index']);

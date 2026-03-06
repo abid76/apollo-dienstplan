@@ -98,5 +98,20 @@ class PlanRepository
         $stmt->execute(['plan_id' => $planId]);
         return $stmt->fetchAll();
     }
+
+    /**
+     * Löscht alle Plan-Einträge für einen gegebenen Plan, ein Datum und einen Mitarbeiter.
+     */
+    public function deleteEntriesForDateAndEmployee(int $planId, string $date, int $employeeId): void
+    {
+        $stmt = $this->db->prepare(
+            'DELETE FROM plan_entry WHERE plan_id = :plan_id AND date = :date AND employee_id = :employee_id'
+        );
+        $stmt->execute([
+            'plan_id' => $planId,
+            'date' => $date,
+            'employee_id' => $employeeId,
+        ]);
+    }
 }
 

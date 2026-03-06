@@ -6,6 +6,7 @@ use App\Repository\PlanRepository;
 use App\Repository\ShiftRepository;
 use App\Repository\RuleRepository;
 use App\Repository\EmployeeRepository;
+use App\Repository\HolidayRepository;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -18,6 +19,7 @@ class PlanService
     private ShiftRepository $shifts;
     private RuleRepository $rules;
     private EmployeeRepository $employees;
+    private HolidayRepository $holidays;
 
     public function __construct()
     {
@@ -25,6 +27,7 @@ class PlanService
         $this->shifts = new ShiftRepository();
         $this->rules = new RuleRepository();
         $this->employees = new EmployeeRepository();
+        $this->holidays = new HolidayRepository();
     }
 
     /**
@@ -39,7 +42,6 @@ class PlanService
     {
         $planId = $this->plans->createPlan($startDate, $weeks);
 
-        $employees = $this->loadEmployeesWithRelations();
         $shifts = $this->shifts->findAll();
 
         $start = new \DateTimeImmutable($startDate);
@@ -48,6 +50,10 @@ class PlanService
         $assignedPerDay = [];
         $currentPlan = [];
         $completeShiftRoleAssignment = [];
+        $employeesPerWeek = [];
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $employeesPerWeek[$weekIndex] = $this->loadEmployeesWithRelationsForWeek($startDate, $weekIndex);
+        }
 
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
 
@@ -63,6 +69,8 @@ class PlanService
                     }
                 }
             }
+
+            $employees = $employeesPerWeek[$weekIndex];
 
             $remainingEmployeeShifts = [];
             foreach ($employees as $employee) {
@@ -186,6 +194,8 @@ class PlanService
                 continue;
             }
 
+            $employees = $employeesPerWeek[$weekIndex];
+
             foreach ($shifts as $shift) {
                 $shiftId = (int)$shift['id'];
 
@@ -240,6 +250,9 @@ class PlanService
 
         // Nun für alle Mitarbeiter sicherstellen, dass sie auf die Schichten verteilt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+
+            $employees = $employeesPerWeek[$weekIndex];
+
             $remainingEmployeeShifts = [];
             foreach ($employees as $employee) {
                 $remainingEmployeeShifts[(int)$employee['id']] =
@@ -249,7 +262,7 @@ class PlanService
             // Wir iterieren über alle Wochentage und Schichten und fügen nach und nach jeweils ein Mitarbeiter hinzu
             // Dies tun wir solange, bis alle Mitarbeiter auf alle Schichten verteilt sind
             // Durch das tageweise hinzufügen eines einzelnen Mitarbeiters werden die Wochentage halbwegs gleichmäßig besetzt
-            $maxIterations = 1000;
+            $maxIterations = 500;
             $iterations = 0;
             while (max($remainingEmployeeShifts) > 0 && $iterations < $maxIterations) {
                 $iterations++;
@@ -792,11 +805,13 @@ class PlanService
         if (!$plan) {
             return null;
         }
+        $weeks = (int)$plan['weeks'];
+        $startDate = $plan['start_date'];
 
         $entries = $this->plans->getEntriesWithDetails($planId);
 
         // Alle Tage des Plans aus start_date und weeks ableiten (immer volle Wochen anzeigen)
-        $start = new \DateTimeImmutable($plan['start_date']);
+        $start = new \DateTimeImmutable($startDate);
         $totalDays = (int)$plan['weeks'] * 7;
         $dateList = [];
         for ($i = 0; $i < $totalDays; $i++) {
@@ -838,8 +853,7 @@ class PlanService
                 continue;
             }
 
-            $employeeWeeklyShiftCounts[$employeeId][$weekIndex] =
-                ($employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0) + 1;
+            $employeeWeeklyShiftCounts[$employeeId][$weekIndex] = ($employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0) + 1;
         }
 
         // Belegungsregeln pro Tag/Schicht prüfen
@@ -917,28 +931,20 @@ class PlanService
         unset($warning);
 
         // Maximalwerte aus den Mitarbeiterdaten holen
-        $allEmployees = $this->employees->findAll();
-        $maxPerWeekByEmployee = [];
-        $nameByEmployee = [];
-        foreach ($allEmployees as $empRow) {
-            $empId = (int)$empRow['id'];
-            $nameByEmployee[$empId] = $empRow['name'] ?? '';
-            if (isset($empRow['max_shifts_per_week'])) {
-                $maxPerWeekByEmployee[$empId] = (int)$empRow['max_shifts_per_week'];
-            }
+        $employeesPerWeek = [];
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $employeesPerWeek[$weekIndex] = $this->loadEmployeesWithRelationsForWeek($startDate, $weekIndex);
         }
 
         $employeeUnderloadWarnings = [];
-        $weeks = (int)$plan['weeks'];
 
-        foreach ($employees as $employee) {
-            $employeeId = (int)$employee['id'];
-            $maxPerWeek = $maxPerWeekByEmployee[$employeeId] ?? null;
-            if ($maxPerWeek === null || $maxPerWeek <= 0) {
-                continue;
-            }
+        for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
 
-            for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
+            $employees = $employeesPerWeek[$weekIndex];
+
+            foreach ($employees as $employee) {
+                $employeeId = (int)$employee['id'];
+                $maxPerWeek = (int)($employee['max_shifts_per_week'] ?? 0);
                 $actual = $employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0;
                 if ($actual < $maxPerWeek) {
                     $employeeUnderloadWarnings[] = [
@@ -980,6 +986,70 @@ class PlanService
             $employee['roles'] = $this->employees->getRoles($id);
             $result[] = $employee;
         }
+        return $result;
+    }
+
+    private function loadEmployeesWithRelationsForWeek($startDate, $weekIndex): array
+    {
+        $all = $this->employees->findAll();
+        $result = [];
+        foreach ($all as $employee) {
+            $id = (int)$employee['id'];
+            $employee['allowed_weekdays'] = $this->employees->getAllowedWeekdays($id);
+            $employee['allowed_shifts'] = $this->employees->getAllowedShifts($id);
+            $employee['allowed_weekday_shifts'] = $this->employees->getAllowedWeekdayShifts($id);
+            $employee['roles'] = $this->employees->getRoles($id);
+            $result[] = $employee;
+        }
+
+        $weekStart = (new \DateTimeImmutable($startDate))->modify('+' . ($weekIndex * 7) . ' days');
+        $weekEnd   = $weekStart->modify('+6 days');
+
+        $holidays = $this->holidays->findByDateRange(
+            $weekStart->format('Y-m-d'),
+            $weekEnd->format('Y-m-d')
+        );
+
+        $holidaysByEmployee = [];
+        foreach ($holidays as $holiday) {
+            $holidaysByEmployee[(int)$holiday['employee_id']][] = $holiday;
+        }
+
+        foreach ($result as &$employee) {
+            $empId = (int)$employee['id'];
+            if (!isset($holidaysByEmployee[$empId])) {
+                continue;
+            }
+
+            // Urlaubstage dieser Woche als Wochentage (0 = Montag, 6 = Sonntag) ermitteln
+            $holidayWeekdays = [];
+            foreach ($holidaysByEmployee[$empId] as $holiday) {
+                $from = new \DateTimeImmutable($holiday['date_from']);
+                $to   = new \DateTimeImmutable($holiday['date_to']);
+                // Auf Wochengrenzen eingrenzen
+                $from = $from < $weekStart ? $weekStart : $from;
+                $to   = $to   > $weekEnd   ? $weekEnd   : $to;
+                $current = $from;
+                while ($current <= $to) {
+                    $holidayWeekdays[(int)$current->format('N') - 1] = true;
+                    $current = $current->modify('+1 day');
+                }
+            }
+
+            $holidayDaysCount = count($holidayWeekdays);
+
+            $employee['max_shifts_per_week'] = max(0, (int)$employee['max_shifts_per_week'] - $holidayDaysCount);
+
+            $employee['allowed_weekdays'] = array_values(
+                array_filter($employee['allowed_weekdays'], fn($wd) => !isset($holidayWeekdays[$wd]))
+            );
+
+            foreach (array_keys($holidayWeekdays) as $wd) {
+                unset($employee['allowed_weekday_shifts'][$wd]);
+            }
+        }
+        unset($employee);
+
         return $result;
     }
 }

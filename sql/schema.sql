@@ -132,4 +132,16 @@ CREATE TABLE IF NOT EXISTS plan_entry (
     FOREIGN KEY (role_id) REFERENCES role (id)
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+ 
+CREATE TABLE IF NOT EXISTS holiday (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  employee_id INT UNSIGNED NOT NULL,
+  date_from DATE NOT NULL,
+  date_to DATE NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_holiday_employee_date (employee_id, date_from, date_to),
+  CONSTRAINT fk_holiday_employee
+    FOREIGN KEY (employee_id) REFERENCES employee (id)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
