@@ -1036,10 +1036,6 @@ class PlanService
                 }
             }
 
-            $holidayDaysCount = count($holidayWeekdays);
-
-            $employee['max_shifts_per_week'] = max(0, (int)$employee['max_shifts_per_week'] - $holidayDaysCount);
-
             $employee['allowed_weekdays'] = array_values(
                 array_filter($employee['allowed_weekdays'], fn($wd) => !isset($holidayWeekdays[$wd]))
             );
@@ -1047,6 +1043,10 @@ class PlanService
             foreach (array_keys($holidayWeekdays) as $wd) {
                 unset($employee['allowed_weekday_shifts'][$wd]);
             }
+
+            // Die maximale Anzahl an Schichten pro Woche ist nun die erneute Anzahl der Wochentage
+            // darf jedoch die ursprüngliche maximale Anzahl an Schichten pro Woche nicht überschreiten.
+            $employee['max_shifts_per_week'] = min((int)$employee['max_shifts_per_week'], count($employee['allowed_weekdays']));
         }
         unset($employee);
 
