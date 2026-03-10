@@ -9,6 +9,7 @@ use App\Controller\EmployeeController;
 use App\Controller\RuleController;
 use App\Controller\PlanController;
 use App\Controller\HolidayController;
+use App\Controller\AbsenceController;
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -70,6 +71,14 @@ $router->post('/holidays/create', [new HolidayController(), 'store']);
 $router->get('/holidays/edit', [new HolidayController(), 'edit']);
 $router->post('/holidays/edit', [new HolidayController(), 'update']);
 $router->post('/holidays/delete', [new HolidayController(), 'delete']);
+
+// Absences
+$router->get('/absences', [new AbsenceController(), 'index']);
+$router->get('/absences/create', [new AbsenceController(), 'create']);
+$router->post('/absences/create', [new AbsenceController(), 'store']);
+$router->get('/absences/edit', [new AbsenceController(), 'edit']);
+$router->post('/absences/edit', [new AbsenceController(), 'update']);
+$router->post('/absences/delete', [new AbsenceController(), 'delete']);
 
 // Rules
 $router->get('/rules', [new RuleController(), 'index']);

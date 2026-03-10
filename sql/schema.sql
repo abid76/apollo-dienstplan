@@ -145,3 +145,18 @@ CREATE TABLE IF NOT EXISTS holiday (
     ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS absence (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  employee_id INT UNSIGNED NOT NULL,
+  date DATE NOT NULL,
+  shift_id INT UNSIGNED NULL,
+  PRIMARY KEY (id),
+  KEY idx_absence_employee_date (employee_id, date),
+  KEY idx_absence_shift (shift_id),
+  CONSTRAINT fk_absence_employee
+    FOREIGN KEY (employee_id) REFERENCES employee (id)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_absence_shift
+    FOREIGN KEY (shift_id) REFERENCES shift (id)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

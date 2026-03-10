@@ -7,6 +7,7 @@ use App\Repository\ShiftRepository;
 use App\Repository\RuleRepository;
 use App\Repository\EmployeeRepository;
 use App\Repository\HolidayRepository;
+use App\Repository\AbsenceRepository;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -20,6 +21,7 @@ class PlanService
     private RuleRepository $rules;
     private EmployeeRepository $employees;
     private HolidayRepository $holidays;
+    private AbsenceRepository $absences;
 
     public function __construct()
     {
@@ -28,6 +30,7 @@ class PlanService
         $this->rules = new RuleRepository();
         $this->employees = new EmployeeRepository();
         $this->holidays = new HolidayRepository();
+        $this->absences = new AbsenceRepository();
     }
 
     /**
@@ -1053,6 +1056,8 @@ class PlanService
         $weekStart = (new \DateTimeImmutable($startDate))->modify('+' . ($weekIndex * 7) . ' days');
         $weekEnd   = $weekStart->modify('+6 days');
 
+        $allShifts = $this->shifts->findAll();
+
         $holidays = $this->holidays->findByDateRange(
             $weekStart->format('Y-m-d'),
             $weekEnd->format('Y-m-d')
@@ -1061,6 +1066,16 @@ class PlanService
         $holidaysByEmployee = [];
         foreach ($holidays as $holiday) {
             $holidaysByEmployee[(int)$holiday['employee_id']][] = $holiday;
+        }
+
+        $absences = $this->absences->findByDateRange(
+            $weekStart->format('Y-m-d'),
+            $weekEnd->format('Y-m-d')
+        );
+
+        $absencesByEmployee = [];
+        foreach ($absences as $absence) {
+            $absencesByEmployee[(int)$absence['employee_id']][] = $absence;
         }
 
         foreach ($result as &$employee) {
@@ -1095,6 +1110,47 @@ class PlanService
             // Die maximale Anzahl an Schichten pro Woche ist nun die erneute Anzahl der Wochentage
             // darf jedoch die ursprüngliche maximale Anzahl an Schichten pro Woche nicht überschreiten.
             $employee['max_shifts_per_week'] = min((int)$employee['max_shifts_per_week'], count($employee['allowed_weekdays']));
+        }
+        unset($employee);
+
+        foreach ($result as &$employee) {
+            $empId = (int)$employee['id'];
+
+            if (isset($absencesByEmployee[$empId])) {
+
+                foreach ($absencesByEmployee[$empId] as $absence) {
+
+                    $absenceDate = new \DateTimeImmutable($absence['date']);
+                    $absenceWeekday = (int)$absenceDate->format('N') - 1;
+                    $absenceShiftId = isset($absence['shift_id']) ? (int)$absence['shift_id'] : null;
+
+                    if (isset($absenceShiftId)) {
+                        if (isset($employee['allowed_weekday_shifts'][$absenceWeekday])) {
+                            if (in_array($absenceShiftId, $employee['allowed_weekday_shifts'][$absenceWeekday], true)) {
+                                // Remove shift_id from allowed_weekday_shifts for this weekday
+                                $employee['allowed_weekday_shifts'][$absenceWeekday] = array_values(
+                                    array_filter(
+                                        $employee['allowed_weekday_shifts'][$absenceWeekday],
+                                        static fn($sid) => $sid !== $absenceShiftId
+                                    )
+                                );
+                            }
+                        } else {
+                            // Der Mitarbeiter hat keinen Eintrag in allowed_weekday_shifts für diesen Wochentag.
+                            // Erzeuge ein "künstliches" allowed_weekday_shifts-Array für diesen Wochentag
+                            // Dieses enthält alle Schichten, die an diesem Tag möglich sind, außer der ausgeglichenen Schicht.
+                            $shiftsAtThisDay = array_column(array_filter($allShifts, fn($shift) => in_array($absenceWeekday, $shift['weekdays'])), 'id');
+                            $employee['allowed_weekday_shifts'][$absenceWeekday] = array_values(array_filter(
+                                array_column($employee['allowed_shifts'], 'shift_id'),
+                                static fn($shiftId) => $shiftId !== $absenceShiftId && in_array($shiftId, $shiftsAtThisDay, true) && in_array($shiftId, array_column($employee['allowed_shifts'], 'shift_id'), true)
+                            ));
+                        }
+                    } else {
+                        $employee['allowed_weekdays'] = array_filter($employee['allowed_weekdays'], fn($wd) => $wd !== $absenceWeekday);
+                        unset($employee['allowed_weekday_shifts'][$absenceWeekday]);
+                    }
+                }
+            }
         }
         unset($employee);
 

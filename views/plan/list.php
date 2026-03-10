@@ -18,6 +18,11 @@ function formatDateRange(string $startDate, int $weeks): string
 <?php if (empty($plans)): ?>
     <p>Noch keine Dienstpläne vorhanden.</p>
 <?php else: ?>
+<?php
+    usort($plans, static function (array $a, array $b): int {
+        return ($b['id'] ?? 0) <=> ($a['id'] ?? 0);
+    });
+?>
 <table>
     <thead>
     <tr>

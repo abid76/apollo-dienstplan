@@ -31,6 +31,7 @@
             <a href="<?= BASE_PATH ?>/rules">Regeln</a>
             <a href="<?= BASE_PATH ?>/employees">Mitarbeiter</a>
             <a href="<?= BASE_PATH ?>/holidays">Urlaub</a>
+            <a href="<?= BASE_PATH ?>/absences">Ausgleichstage</a>
             <a href="<?= BASE_PATH ?>/plan">Dienstplan</a>
         </nav>
     </header>
