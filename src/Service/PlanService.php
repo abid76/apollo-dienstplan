@@ -373,7 +373,7 @@ class PlanService
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
 
             $employees = $employeesPerWeek[$weekIndex];
-            
+
             foreach ($employees as $employee) {
 
                 $employeeId = (int)$employee['id'];
@@ -391,11 +391,11 @@ class PlanService
 
                     $dayIndex = $weekIndex * 7 + $allowedWeekday;
                     $dateString = $start->modify("+{$dayIndex} day")->format('Y-m-d');
-                    
+
                     foreach ($allowedShiftIds as $allowedShiftId) {
-                        
+
                         $allowedShiftId = (int)$allowedShiftId;
-                        
+
                         foreach ($employee['roles'] as $roleId) {
 
                             if (!$this->isEmployeeAllowedForDayShiftAndRole($employee, $allowedShiftId, $roleId, $dateString, $currentPlan)) {
@@ -408,7 +408,7 @@ class PlanService
                             // Prüfen, ob bereits besetzte Mitarbeiter auf eine andere freie Schicht wechseln können
                             $assignedEmployees = $currentPlan[$dateString][$allowedShiftId][$roleId] ?? [];
                             error_log('Assigned employees at ' . $dateString . ' ' . $allowedShiftId . ' ' . $roleId . ': ' . print_r($assignedEmployees, true));
-                            
+
                             foreach ($assignedEmployees as $assignedEmployeeId) {
 
                                 $assignedEmployee = null;
@@ -945,8 +945,7 @@ class PlanService
                         if ($assignedThisDay) {
                             continue;
                         }
-                    }
-                    else if ($shiftId === $replacementShiftId) {
+                    } else if ($shiftId === $replacementShiftId) {
                         error_log('Skipping shift: ' . $dateString . ' ' . $shiftId . ' ' . $roleId);
                         continue;
                     }
@@ -968,8 +967,7 @@ class PlanService
         int $shiftId,
         int $roleId,
         string $dateString,
-        array $currentPlan,
-        bool $checkMaxShiftsPerWeek = true
+        array $currentPlan
     ): bool {
         $employeeId = (int)$employee['id'];
         $actualWeekday = (int)(new \DateTimeImmutable($dateString))->format('N') - 1;
@@ -1018,20 +1016,18 @@ class PlanService
         }
 
         // Max. Schichten pro Woche (anhand $currentPlan prüfen)
-        if ($checkMaxShiftsPerWeek) {
-            $date = new \DateTimeImmutable($dateString);
-            $monday = $date->modify('-' . ((int)$date->format('N') - 1) . ' days');
-            $currentWeekCount = 0;
-            for ($i = 0; $i < 7; $i++) {
-                $dayInWeek = $monday->modify("+{$i} days")->format('Y-m-d');
-                $dayAssignments = $currentPlan[$dayInWeek] ?? [];
-                foreach ($dayAssignments as $shiftAssignments) {
-                    foreach ($shiftAssignments as $roleAssignments) {
-                        if (in_array($employeeId, $roleAssignments, true)) {
-                            $currentWeekCount++;
-                            if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
-                                return false;
-                            }
+        $date = new \DateTimeImmutable($dateString);
+        $monday = $date->modify('-' . ((int)$date->format('N') - 1) . ' days');
+        $currentWeekCount = 0;
+        for ($i = 0; $i < 7; $i++) {
+            $dayInWeek = $monday->modify("+{$i} days")->format('Y-m-d');
+            $dayAssignments = $currentPlan[$dayInWeek] ?? [];
+            foreach ($dayAssignments as $shiftAssignments) {
+                foreach ($shiftAssignments as $roleAssignments) {
+                    if (in_array($employeeId, $roleAssignments, true)) {
+                        $currentWeekCount++;
+                        if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                            return false;
                         }
                     }
                 }
