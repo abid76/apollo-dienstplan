@@ -56,6 +56,30 @@ class PlanRepository
         ]);
     }
 
+    public function deleteEntry(
+        int $planId,
+        string $date,
+        int $shiftId,
+        int $employeeId,
+        int $roleId
+    ): void {
+        $stmt = $this->db->prepare(
+            'DELETE FROM plan_entry
+             WHERE plan_id = :plan_id
+               AND date = :date
+               AND shift_id = :shift_id
+               AND employee_id = :employee_id
+               AND role_id = :role_id'
+        );
+        $stmt->execute([
+            'plan_id' => $planId,
+            'date' => $date,
+            'shift_id' => $shiftId,
+            'employee_id' => $employeeId,
+            'role_id' => $roleId,
+        ]);
+    }
+
     public function getPlan(int $id): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM plan WHERE id = :id');
