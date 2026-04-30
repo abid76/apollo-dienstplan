@@ -167,6 +167,7 @@ if (!empty($dates)) {
 
 <style>.plan-table th:first-child,
 .plan-table td:first-child { white-space: nowrap; }
+.plan-table tbody tr:nth-child(even) { background-color: #f2f7ff; }
 .plan-table tbody tr:hover { background-color: rgba(0, 0, 0, 0.05); }
 .plan-table .shift-line { margin-bottom: 2px; }
 .plan-table .shift-toggle { margin-left: 6px; cursor: pointer; }
@@ -229,7 +230,7 @@ $displayDates = $dates;
                     $roles[] = $entry['shortcode'] ?? '';
                 }
                 $isOnHoliday = !empty($employeeHolidays[$employeeId][$date] ?? false);
-                $holidayStyle = $isOnHoliday ? 'background-color: #f3f3f3;' : '';
+                $holidayStyle = '';
                 ?>
                 <td style="<?php echo $holidayStyle; ?>">
                     <?php if ($isOnHoliday): ?>
@@ -348,7 +349,7 @@ $displayDates = $dates;
                     $roles[] = $entry['shortcode'] ?? '';
                 }
                 $isOnHoliday = !empty($employeeHolidays[$employeeId][$date] ?? false);
-                $holidayStyle = $isOnHoliday ? 'background-color: #f3f3f3;' : '';
+                $holidayStyle = '';
                 ?>
                 <td style="<?php echo $holidayStyle; ?>">
                     <?php if ($isOnHoliday): ?>

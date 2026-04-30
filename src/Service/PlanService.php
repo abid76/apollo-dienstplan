@@ -627,8 +627,19 @@ class PlanService
 
             // Daten beginnen in Zeile 4
             $row = 4;
+            $employeeRowIndex = 0;
             foreach ($employees as $employee) {
+                $employeeRowIndex++;
                 $employeeId = (int)$employee['id'];
+
+                // Alternierender Hintergrund für Mitarbeiterzeilen (Zebra)
+                if ($employeeRowIndex % 2 === 0) {
+                    $zebraRange = 'B' . $row . ':' . $lastCol . $row;
+                    $sheet->getStyle($zebraRange)->getFill()
+                        ->setFillType(Fill::FILL_SOLID)
+                        ->getStartColor()->setARGB('FFE6F0FF');
+                }
+
                 // Mitarbeiter-Namen in die erste Daten-Spalte (B) schreiben
                 $sheet->setCellValue('B' . $row, $employee['name'] ?? '');
 
@@ -661,10 +672,6 @@ class PlanService
                     $isOnHoliday = !empty($employeeHolidays[$employeeId][$dateString] ?? false);
 
                     if ($isOnHoliday) {
-                        $holidayRange = $colTime . $row . ':' . $colRole . $row;
-                        $sheet->getStyle($holidayRange)->getFill()
-                            ->setFillType(Fill::FILL_SOLID)
-                            ->getStartColor()->setARGB('FFEFEFEF');
                         $sheet->setCellValue($colTime . $row, 'U');
                         $sheet->getStyle($colTime . $row)->getFont()->getColor()->setARGB('FF888888');
                     } elseif ($times) {
@@ -774,13 +781,26 @@ class PlanService
                     $defaultHeight = 15;
                 }
                 // etwas Puffer, damit alle Textzeilen sicher sichtbar sind
-                $effectiveLines = $maxShiftLines + 4;
+                $effectiveLines = $maxShiftLines + 5;
                 $sheet->getRowDimension($footerShiftsRow)->setRowHeight($defaultHeight * $effectiveLines);
             }
 
             // Footer-Zellen vertikal oben ausrichten
             $footerRange = 'B' . $footerRolesRow . ':' . $lastCol . $footerShiftsRow;
             $sheet->getStyle($footerRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+
+            // Trennlinie zwischen "Arbeitszeit" und "Rolle" explizit setzen, damit sie auch bei Zellfüllungen (Zebra) sichtbar bleibt.
+            // Excel-Gridlines werden bei gefüllten Zellen nicht angezeigt.
+            for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
+                $colTimeIndex = 3 + $dayOffset * 2;
+                $colRoleIndex = $colTimeIndex + 1;
+                $colRole = Coordinate::stringFromColumnIndex($colRoleIndex);
+
+                $dividerRange = $colRole . '3:' . $colRole . $footerShiftsRow;
+                $sheet->getStyle($dividerRange)->getBorders()->getLeft()
+                    ->setBorderStyle(Border::BORDER_THIN)
+                    ->getColor()->setARGB('FFBFBFBF');
+            }
 
             // Für jeden Tag einen fetten Rahmen um den kompletten Bereich (Überschriften, Daten, Footer)
             for ($dayOffset = 0; $dayOffset < 7; $dayOffset++) {
@@ -801,6 +821,16 @@ class PlanService
             for ($colIndex = 2; $colIndex <= 2 + 7 * 2; $colIndex++) {
                 $col = Coordinate::stringFromColumnIndex($colIndex);
                 $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            // Beim Öffnen soll nur A1 ausgewählt sein (keine ganze Tabelle markiert)
+            $sheet->setSelectedCell('A1');
+            // Je nach PhpSpreadsheet-Version sitzt top-left am Pane-Objekt (nicht direkt am SheetView)
+            if (method_exists($sheet->getSheetView(), 'getPane')) {
+                $pane = $sheet->getSheetView()->getPane();
+                if ($pane && method_exists($pane, 'setTopLeftCell')) {
+                    $pane->setTopLeftCell('A1');
+                }
             }
         }
 
