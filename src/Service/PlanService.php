@@ -202,6 +202,8 @@ class PlanService
             }
         }
 
+        return $planId;
+
         // Nun stellen wir sicher, dass Montags so viele Mitarbeiter wie möglich besetzt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $dayIndex = $weekIndex * 7;
@@ -1295,7 +1297,8 @@ class PlanService
             $warning['eligible_employees'] = $this->employees->getEligibleEmployeeNamesForShiftOnWeekday(
                 $weekdayZeroBased,
                 (int)$warning['shift_id'],
-                (int)$warning['role_id']
+                (int)$warning['role_id'],
+                $warning['date']
             );
         }
         unset($warning);

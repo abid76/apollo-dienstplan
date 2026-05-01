@@ -287,13 +287,15 @@ class EmployeeRepository
      * Liefert die Namen aller Mitarbeiter, die an einem Wochentag für die gegebene Schicht und Rolle
      * grundsätzlich eingeteilt werden könnten (gemäß employee_allowed_weekday, employee_allowed_shift,
      * employee_allowed_weekday_shift und employee_role). Wochentag 0 = Montag, 6 = Sonntag.
+     * Mitarbeiter mit Urlaub (holiday) am angegebenen Kalendertag werden ausgeschlossen.
      *
      * @param int $weekday Wochentag 0–6 (0 = Montag)
      * @param int $shiftId Schicht-ID
      * @param int $roleId Rollen-ID
+     * @param string $onDate Kalendertag Y-m-d
      * @return list<string> Mitarbeiternamen, sortiert
      */
-    public function getEligibleEmployeeNamesForShiftOnWeekday(int $weekday, int $shiftId, int $roleId): array
+    public function getEligibleEmployeeNamesForShiftOnWeekday(int $weekday, int $shiftId, int $roleId, string $onDate): array
     {
         $sql = '
             SELECT e.name
@@ -303,6 +305,12 @@ class EmployeeRepository
             INNER JOIN employee_allowed_shift eas ON e.id = eas.employee_id AND eas.shift_id = :shift_id
             LEFT JOIN employee_allowed_weekday_shift eaws ON e.id = eaws.employee_id AND eaws.weekday = :weekday2
             WHERE (eaws.employee_id IS NULL OR eaws.shift_id = :shift_id2)
+              AND NOT EXISTS (
+                  SELECT 1 FROM holiday h
+                  WHERE h.employee_id = e.id
+                    AND h.date_from <= :on_date
+                    AND h.date_to >= :on_date2
+              )
             ORDER BY e.name
         ';
         $stmt = $this->db->prepare($sql);
@@ -312,6 +320,8 @@ class EmployeeRepository
             'shift_id' => $shiftId,
             'weekday2' => $weekday,
             'shift_id2' => $shiftId,
+            'on_date' => $onDate,
+            'on_date2' => $onDate,
         ]);
         return array_column($stmt->fetchAll(), 'name');
     }
