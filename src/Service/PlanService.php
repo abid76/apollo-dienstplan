@@ -129,14 +129,26 @@ class PlanService
                         // damit Kapazität (Anz. Schichten/Woche) genutzt wird
                         $randomOrder = range(0, max(array_column($employees, 'id')) ?: 0);
                         shuffle($randomOrder); // Zufälligkeit für den Fall, dass die Anzahl der Einsätze gleich ist
-                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder, $employees, $actualWeekday, $shiftId) {
+                        usort($candidates, function ($a, $b) use ($assignmentsPerWeek, $weekIndex, $randomOrder, $employees, $actualWeekday, $shiftId, $shifts) {
 
                             // Es wird der Mitarbeiter mit der kleinsten Anzahl an möglichen Schichten (für diesen Tag) bevorzugt.
                             // Gedanke: Wenn ein Mitarbeiter nur eine bestimmte Schicht machen kann, dann soll er sie bekommen.
                             $employeeA = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $a))[0] ?? null;
                             $employeeB = array_values(array_filter($employees, fn($emp) => (int)$emp['id'] === $b))[0] ?? null;
+                            $aAllowedShiftsAtDay = $this->filterAllowedShiftsForWeekday(
+                                (array)($employeeA['allowed_shifts'] ?? []),
+                                $actualWeekday,
+                                $shifts
+                            );
+                            $bAllowedShiftsAtDay = $this->filterAllowedShiftsForWeekday(
+                                (array)($employeeB['allowed_shifts'] ?? []),
+                                $actualWeekday,
+                                $shifts
+                            );
+
                             $aCount = PHP_INT_MAX;
                             $bCount = PHP_INT_MAX;
+
                             if (
                                 !empty($employeeA['allowed_weekday_shifts']) &&
                                 array_key_exists($actualWeekday, $employeeA['allowed_weekday_shifts']) &&
@@ -144,7 +156,7 @@ class PlanService
                             ) {
                                 $aCount = count($employeeA['allowed_weekday_shifts'][$actualWeekday]);
                             } else {
-                                $aCount = count($employeeA['allowed_shifts']);
+                                $aCount = count($aAllowedShiftsAtDay);
                             }
                             if (
                                 !empty($employeeB['allowed_weekday_shifts']) &&
@@ -153,7 +165,7 @@ class PlanService
                             ) {
                                 $bCount = count($employeeB['allowed_weekday_shifts'][$actualWeekday]);
                             } else {
-                                $bCount = count($employeeB['allowed_shifts']);
+                                $bCount = count($bAllowedShiftsAtDay);
                             }
                             if ($aCount !== $bCount) {
                                 return ($aCount <=> $bCount);
@@ -851,6 +863,36 @@ class PlanService
             $to = (int) substr($to, 0, 2);
         }
         return $from . '-' . $to . ' Uhr';
+    }
+
+    /**
+     * Nur Einträge aus employee_allowed_shift, deren Schicht an $weekdayZeroBased (0 = Montag) vorkommt.
+     *
+     * @param array<int, array{shift_id: int, max_per_week?: ?int}> $allowedShifts
+     * @param array<int, array<string, mixed>> $allShifts
+     * @return array<int, array{shift_id: int, max_per_week?: ?int}>
+     */
+    private function filterAllowedShiftsForWeekday(array $allowedShifts, int $weekdayZeroBased, array $allShifts): array
+    {
+        $byShiftId = [];
+        foreach ($allShifts as $shift) {
+            $byShiftId[(int)$shift['id']] = $shift;
+        }
+
+        $out = [];
+        foreach ($allowedShifts as $entry) {
+            $sid = (int)($entry['shift_id'] ?? 0);
+            if ($sid <= 0 || !isset($byShiftId[$sid])) {
+                continue;
+            }
+            $shift = $byShiftId[$sid];
+            $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+            if (in_array($weekdayZeroBased, $shiftWeekdays, true)) {
+                $out[] = $entry;
+            }
+        }
+
+        return $out;
     }
 
     /**
