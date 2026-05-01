@@ -286,17 +286,18 @@ class EmployeeRepository
     /**
      * Liefert die Namen aller Mitarbeiter, die an einem Wochentag für die gegebene Schicht und Rolle
      * grundsätzlich eingeteilt werden könnten (gemäß employee_allowed_weekday, employee_allowed_shift,
-     * employee_allowed_weekday_shift und employee_role). Wochentag 0 = Montag, 6 = Sonntag.
-     * Mitarbeiter mit Urlaub (holiday) am angegebenen Kalendertag werden ausgeschlossen.
+     * employee_allowed_weekday_shift und employee_role). Der Wochentag (0 = Montag … 6 = Sonntag)
+     * ergibt sich aus $onDate. Mitarbeiter mit Urlaub (holiday) an diesem Tag werden ausgeschlossen.
      *
-     * @param int $weekday Wochentag 0–6 (0 = Montag)
      * @param int $shiftId Schicht-ID
      * @param int $roleId Rollen-ID
      * @param string $onDate Kalendertag Y-m-d
      * @return list<string> Mitarbeiternamen, sortiert
      */
-    public function getEligibleEmployeeNamesForShiftOnWeekday(int $weekday, int $shiftId, int $roleId, string $onDate): array
+    public function getEligibleEmployeeNamesForShiftOnDate(int $shiftId, int $roleId, string $onDate): array
     {
+        $weekday = (int)(new \DateTimeImmutable($onDate))->format('N') - 1;
+
         $sql = '
             SELECT e.name
             FROM employee e

@@ -1293,9 +1293,7 @@ class PlanService
 
         // Pro Warnung: Mitarbeiter ermitteln, die an diesem Tag in dieser Schicht/Rolle eingeteilt werden könnten
         foreach ($coverageWarnings as &$warning) {
-            $weekdayZeroBased = (int)(new \DateTimeImmutable($warning['date']))->format('N') - 1;
-            $warning['eligible_employees'] = $this->employees->getEligibleEmployeeNamesForShiftOnWeekday(
-                $weekdayZeroBased,
+            $warning['eligible_employees'] = $this->employees->getEligibleEmployeeNamesForShiftOnDate(
                 (int)$warning['shift_id'],
                 (int)$warning['role_id'],
                 $warning['date']
