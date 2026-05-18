@@ -50,7 +50,7 @@ $weekdayShort = [
             </td>
             <td><?php echo htmlspecialchars(formatTimeRange($rule['time_from'] ?? '', $rule['time_to'] ?? ''), ENT_QUOTES, 'UTF-8'); ?></td>
             <td><?php echo htmlspecialchars($rule['role_name'], ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars($rule['shortcode'], ENT_QUOTES, 'UTF-8'); ?>)</td>
-            <td><?php echo !empty($rule['required_count_exact']) ? (int)$rule['required_count'] : '≥' . (int)$rule['required_count']; ?></td>
+            <td><?php echo !empty($rule['required_employee_count_exact']) ? (int)$rule['required_employee_count'] : '≥' . (int)$rule['required_employee_count']; ?></td>
             <td class="actions">
                 <a href="<?= BASE_PATH ?>/rules/edit?id=<?php echo (int)$rule['id']; ?>">Bearbeiten</a>
                 <form class="inline" method="post" action="<?= BASE_PATH ?>/rules/delete" onsubmit="return confirm('Regel wirklich löschen?');">

@@ -48,30 +48,30 @@ class RuleRepository
         return $row ?: null;
     }
 
-    public function create(int $shiftId, int $roleId, int $requiredCount, bool $requiredCountExact = false): void
+    public function create(int $shiftId, int $roleId, int $requiredEmployeeCount, bool $requiredEmployeeCountExact = false): void
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO rule (shift_id, role_id, required_count, required_count_exact) VALUES (:shift_id, :role_id, :required_count, :required_count_exact)'
+            'INSERT INTO rule (shift_id, role_id, required_employee_count, required_employee_count_exact) VALUES (:shift_id, :role_id, :required_employee_count, :required_employee_count_exact)'
         );
         $stmt->execute([
             'shift_id' => $shiftId,
             'role_id' => $roleId,
-            'required_count' => $requiredCount,
-            'required_count_exact' => $requiredCountExact ? 1 : 0,
+            'required_employee_count' => $requiredEmployeeCount,
+            'required_employee_count_exact' => $requiredEmployeeCountExact ? 1 : 0,
         ]);
     }
 
-    public function update(int $id, int $shiftId, int $roleId, int $requiredCount, bool $requiredCountExact = false): void
+    public function update(int $id, int $shiftId, int $roleId, int $requiredEmployeeCount, bool $requiredEmployeeCountExact = false): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE rule SET shift_id = :shift_id, role_id = :role_id, required_count = :required_count, required_count_exact = :required_count_exact WHERE id = :id'
+            'UPDATE rule SET shift_id = :shift_id, role_id = :role_id, required_employee_count = :required_employee_count, required_employee_count_exact = :required_employee_count_exact WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
             'shift_id' => $shiftId,
             'role_id' => $roleId,
-            'required_count' => $requiredCount,
-            'required_count_exact' => $requiredCountExact ? 1 : 0,
+            'required_employee_count' => $requiredEmployeeCount,
+            'required_employee_count_exact' => $requiredEmployeeCountExact ? 1 : 0,
         ]);
     }
 

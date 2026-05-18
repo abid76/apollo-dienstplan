@@ -53,8 +53,8 @@ class RuleService
         $this->rules->create(
             (int)$data['shift_id'],
             (int)$data['role_id'],
-            (int)$data['required_count'],
-            !empty($data['required_count_exact'])
+            (int)$data['required_employee_count'],
+            !empty($data['required_employee_count_exact'])
         );
 
         return [];
@@ -71,8 +71,8 @@ class RuleService
             $id,
             (int)$data['shift_id'],
             (int)$data['role_id'],
-            (int)$data['required_count'],
-            !empty($data['required_count_exact'])
+            (int)$data['required_employee_count'],
+            !empty($data['required_employee_count_exact'])
         );
 
         return [];
@@ -92,10 +92,10 @@ class RuleService
         if (empty($data['role_id'] ?? '')) {
             $errors[] = 'Rolle ist erforderlich.';
         }
-        if (!isset($data['required_count']) || $data['required_count'] === '') {
-            $errors[] = 'Anzahl ist erforderlich.';
-        } elseif (!is_numeric($data['required_count']) || (int)$data['required_count'] < 1) {
-            $errors[] = 'Anzahl muss eine positive Zahl sein.';
+        if (!isset($data['required_employee_count']) || $data['required_employee_count'] === '') {
+            $errors[] = 'Anzahl der Mitarbeiter ist erforderlich.';
+        } elseif (!is_numeric($data['required_employee_count']) || (int)$data['required_employee_count'] < 1) {
+            $errors[] = 'Anzahl der Mitarbeiter muss eine positive Ganzzahl sein.';
         }
 
         return $errors;

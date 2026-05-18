@@ -87,8 +87,8 @@ CREATE TABLE IF NOT EXISTS rule (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   shift_id INT UNSIGNED NOT NULL,
   role_id INT UNSIGNED NOT NULL,
-  required_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
-  required_count_exact TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1=genauer Wert, 0=Mindestwert',
+  required_employee_count TINYINT UNSIGNED NOT NULL DEFAULT 1,
+  required_employee_count_exact TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1=genauer Wert, 0=Mindestwert',
   PRIMARY KEY (id),
   UNIQUE KEY uniq_rule (shift_id, role_id),
   CONSTRAINT fk_rules_shift

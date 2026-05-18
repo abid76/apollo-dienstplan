@@ -101,7 +101,7 @@ class PlanService
 
                     foreach ($shiftRules as $rule) {
                         $roleId = (int)$rule['role_id'];
-                        $requiredCount = (int)$rule['required_count'];
+                        $requiredEmployeeCount = (int)$rule['required_employee_count'];
 
                         $candidates = [];
 
@@ -179,13 +179,13 @@ class PlanService
                             return $ca <=> $cb;
                         });
 
-                        $selected = array_slice($candidates, 0, $requiredCount);
+                        $selected = array_slice($candidates, 0, $requiredEmployeeCount);
 
                         foreach ($selected as $employeeId) {
                             $assignmentsPerWeek[$employeeId][$weekIndex] = ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
                             $assignedPerDay[$dateString][$employeeId] = $roleId;
                             $remainingEmployeeShifts[$employeeId]--;
-                            if ($rule['required_count_exact'] === 1) {
+                            if ($rule['required_employee_count_exact'] === 1) {
                                 $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
                             }
                             $currentPlan[$dateString][$shiftId][$roleId][] = $employeeId;
@@ -233,7 +233,7 @@ class PlanService
                     if ($completeShiftRoleAssignment[$dateString][$shiftId][$roleId] ?? false) {
                         continue;
                     }
-                    $requiredCount = (int)$rule['required_count'];
+                    $requiredEmployeeCount = (int)$rule['required_employee_count'];
 
                     foreach ($employees as $employee) {
 
@@ -258,7 +258,7 @@ class PlanService
                         $assignedPerDay[$dateString][$employeeId] = $roleId;
                         $assignmentsPerWeek[$employeeId][$weekIndex] = ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
                         $remainingEmployeeShifts[$employeeId]--;
-                        if ($rule['required_count_exact'] === 1) {
+                        if ($rule['required_employee_count_exact'] === 1) {
                             $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
                         }
                     }
@@ -362,7 +362,7 @@ class PlanService
                                 $assignmentsPerWeek[$employeeId][$weekIndex] = ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0) + 1;
                                 $assignedPerDay[$dateString][$employeeId] = $roleId;
                                 $remainingEmployeeShifts[$employeeId]--;
-                                if ($rule['required_count_exact'] === 1) {
+                                if ($rule['required_employee_count_exact'] === 1) {
                                     $completeShiftRoleAssignment[$dateString][$shiftId][$roleId] = true;
                                 }
                                 $currentPlan[$dateString][$shiftId][$roleId][] = $employeeId;
@@ -998,9 +998,9 @@ class PlanService
                     if ($rule === null) {
                         continue;
                     }
-                    $requiredCount = (int)$rule['required_count'];
-                    $requiredCountExact = (int)$rule['required_count_exact'];
-                    if ($requiredCountExact === 1 && count($currentPlan[$dateString][$shiftId][$roleId] ?? []) >= $requiredCount) {
+                    $requiredEmployeeCount = (int)$rule['required_employee_count'];
+                    $requiredEmployeeCountExact = (int)$rule['required_employee_count_exact'];
+                    if ($requiredEmployeeCountExact === 1 && count($currentPlan[$dateString][$shiftId][$roleId] ?? []) >= $requiredEmployeeCount) {
                         continue;
                     }
 
@@ -1247,7 +1247,7 @@ class PlanService
             foreach ($ruleRows as $rule) {
                 $shiftId = (int)$rule['shift_id'];
                 $roleId = (int)$rule['role_id'];
-                $requiredCount = (int)$rule['required_count'];
+                $requiredEmployeeCount = (int)$rule['required_employee_count'];
 
                 // Regel gilt nur an den in der Schicht definierten Wochentagen
                 $shiftWeekdays = $rule['shift_weekdays'] ?? [];
@@ -1256,7 +1256,7 @@ class PlanService
                 }
 
                 $actualCount = (int)($assignmentsByDateShiftRole[$date][$shiftId][$roleId] ?? 0);
-                if ($actualCount < $requiredCount) {
+                if ($actualCount < $requiredEmployeeCount) {
                     $coverageWarnings[] = [
                         'date' => $date,
                         'shift_id' => $shiftId,
@@ -1266,7 +1266,7 @@ class PlanService
                         'time_to' => $rule['time_to'] ?? '',
                         'role_name' => $rule['role_name'] ?? '',
                         'role_shortcode' => $rule['shortcode'] ?? '',
-                        'required' => $requiredCount,
+                        'required' => $requiredEmployeeCount,
                         'actual' => $actualCount,
                     ];
                 }
