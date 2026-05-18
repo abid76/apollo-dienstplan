@@ -16,7 +16,16 @@ class ShiftRepository
 
     public function findAll(): array
     {
-        $stmt = $this->db->query('SELECT * FROM shift ORDER BY time_from, name');
+        $stmt = $this->db->query(
+            'SELECT s.*
+             FROM shift s
+             LEFT JOIN (
+                 SELECT shift_id, MIN(weekday) AS min_weekday
+                 FROM shift_weekday
+                 GROUP BY shift_id
+             ) sw ON sw.shift_id = s.id
+             ORDER BY sw.min_weekday, s.time_from, s.name'
+        );
         $shifts = $stmt->fetchAll();
 
         if (!$shifts) {
