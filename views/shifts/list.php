@@ -35,7 +35,7 @@ $weekdayShort = [
             <td><?php echo htmlspecialchars($shift['name'], ENT_QUOTES, 'UTF-8'); ?></td>
             <td>
                 <?php
-                $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                $weekdays = $shift['weekdays'] ?? [];
                 $labels = [];
                 foreach ($weekdays as $day) {
                     $day = (int)$day;

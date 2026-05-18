@@ -42,7 +42,7 @@ $requiredCountExact = !empty($rule['required_count_exact']);
             <option value="">Bitte wählen</option>
             <?php foreach ($shifts as $shift): ?>
                 <?php
-                $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int) $shift['weekday'] : 0];
+                $weekdays = $shift['weekdays'] ?? [];
                 $weekdayLabels = [];
                 foreach ((array) $weekdays as $day) {
                     $day = (int) $day;

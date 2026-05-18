@@ -14,23 +14,27 @@ class RuleRepository
         $this->db = Database::getConnection();
     }
 
+    public function findAll(): array
+    {
+        $stmt = $this->db->query('SELECT * FROM rule ORDER BY shift_id, role_id');
+        return $stmt->fetchAll();
+    }
+
     public function findAllWithDetails(): array
     {
-        $sql = 'SELECT r.*, s.name AS shift_name, s.weekday, s.time_from, s.time_to, ro.name AS role_name, ro.shortcode,
+        $sql = 'SELECT r.*, s.name AS shift_name, s.time_from, s.time_to, ro.name AS role_name, ro.shortcode,
                 (SELECT GROUP_CONCAT(sw.weekday ORDER BY sw.weekday) FROM shift_weekday sw WHERE sw.shift_id = r.shift_id) AS shift_weekdays_concat
                 FROM rule r
                 JOIN shift s ON r.shift_id = s.id
                 JOIN role ro ON r.role_id = ro.id
-                ORDER BY s.weekday, s.time_from, ro.name';
+                ORDER BY s.time_from, s.name, ro.name';
         $stmt = $this->db->query($sql);
         $rows = $stmt->fetchAll();
         foreach ($rows as &$row) {
             $concat = $row['shift_weekdays_concat'] ?? null;
-            if ($concat !== null && $concat !== '') {
-                $row['shift_weekdays'] = array_map('intval', explode(',', $concat));
-            } else {
-                $row['shift_weekdays'] = [isset($row['weekday']) ? (int) $row['weekday'] : 0];
-            }
+            $row['shift_weekdays'] = ($concat !== null && $concat !== '')
+                ? array_map('intval', explode(',', $concat))
+                : [];
             unset($row['shift_weekdays_concat']);
         }
         return $rows;

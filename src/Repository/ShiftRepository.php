@@ -16,15 +16,13 @@ class ShiftRepository
 
     public function findAll(): array
     {
-        // Alle Schichten laden
-        $stmt = $this->db->query('SELECT * FROM shift ORDER BY weekday, time_from');
+        $stmt = $this->db->query('SELECT * FROM shift ORDER BY time_from, name');
         $shifts = $stmt->fetchAll();
 
         if (!$shifts) {
             return [];
         }
 
-        // Zugehörige Wochentage aus shift_weekday laden und nach shift_id gruppieren
         $stmt = $this->db->query('SELECT shift_id, weekday FROM shift_weekday ORDER BY weekday');
         $rows = $stmt->fetchAll();
 
@@ -37,12 +35,7 @@ class ShiftRepository
 
         foreach ($shifts as &$shift) {
             $id = (int)$shift['id'];
-            if (isset($weekdaysByShift[$id])) {
-                $shift['weekdays'] = $weekdaysByShift[$id];
-            } else {
-                // Fallback: einzelner Wochentag aus der Haupttabelle
-                $shift['weekdays'] = [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
-            }
+            $shift['weekdays'] = $weekdaysByShift[$id] ?? [];
         }
         unset($shift);
 
@@ -58,17 +51,9 @@ class ShiftRepository
             return null;
         }
 
-        // Zugehörige Wochentage laden
         $stmt = $this->db->prepare('SELECT weekday FROM shift_weekday WHERE shift_id = :id ORDER BY weekday');
         $stmt->execute(['id' => $id]);
-        $weekdays = $stmt->fetchAll();
-
-        if ($weekdays) {
-            $row['weekdays'] = array_map('intval', array_column($weekdays, 'weekday'));
-        } else {
-            // Fallback: einzelner Wochentag aus der Haupttabelle
-            $row['weekdays'] = [isset($row['weekday']) ? (int)$row['weekday'] : 0];
-        }
+        $row['weekdays'] = array_map('intval', array_column($stmt->fetchAll(), 'weekday'));
 
         return $row;
     }
@@ -79,16 +64,13 @@ class ShiftRepository
             return;
         }
 
-        $primaryWeekday = min($weekdays);
-
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                'INSERT INTO shift (name, weekday, time_from, time_to) VALUES (:name, :weekday, :time_from, :time_to)'
+                'INSERT INTO shift (name, time_from, time_to) VALUES (:name, :time_from, :time_to)'
             );
             $stmt->execute([
                 'name' => $name,
-                'weekday' => $primaryWeekday,
                 'time_from' => $timeFrom,
                 'time_to' => $timeTo,
             ]);
@@ -109,17 +91,14 @@ class ShiftRepository
             return;
         }
 
-        $primaryWeekday = min($weekdays);
-
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare(
-                'UPDATE shift SET name = :name, weekday = :weekday, time_from = :time_from, time_to = :time_to WHERE id = :id'
+                'UPDATE shift SET name = :name, time_from = :time_from, time_to = :time_to WHERE id = :id'
             );
             $stmt->execute([
                 'id' => $id,
                 'name' => $name,
-                'weekday' => $primaryWeekday,
                 'time_from' => $timeFrom,
                 'time_to' => $timeTo,
             ]);
@@ -144,11 +123,9 @@ class ShiftRepository
      */
     private function saveWeekdays(int $shiftId, array $weekdays): void
     {
-        // Bestehende Einträge löschen
         $stmt = $this->db->prepare('DELETE FROM shift_weekday WHERE shift_id = :shift_id');
         $stmt->execute(['shift_id' => $shiftId]);
 
-        // Neue Einträge einfügen
         $stmt = $this->db->prepare(
             'INSERT INTO shift_weekday (shift_id, weekday) VALUES (:shift_id, :weekday)'
         );
@@ -162,4 +139,3 @@ class ShiftRepository
         }
     }
 }
-

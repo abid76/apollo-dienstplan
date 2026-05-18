@@ -89,7 +89,7 @@ class PlanService
 
                     $shiftId = (int)$shift['id'];
                     // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
-                    $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                    $shiftWeekdays = $shift['weekdays'] ?? [];
                     if (!in_array($actualWeekday, $shiftWeekdays, true)) {
                         continue;
                     }
@@ -218,7 +218,7 @@ class PlanService
                 $shiftId = (int)$shift['id'];
 
                 // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
-                $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                $shiftWeekdays = $shift['weekdays'] ?? [];
                 if (!in_array($actualWeekday, $shiftWeekdays, true)) {
                     continue;
                 }
@@ -293,7 +293,7 @@ class PlanService
                     foreach ($shifts as $shift) {
                         $shiftId = (int)$shift['id'];
                         // Schicht gilt an diesem Tag, wenn der Wochentag in den Schicht-Wochentagen vorkommt
-                        $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                        $shiftWeekdays = $shift['weekdays'] ?? [];
                         if (!in_array($actualWeekday, $shiftWeekdays, true)) {
                             continue;
                         }
@@ -886,7 +886,7 @@ class PlanService
                 continue;
             }
             $shift = $byShiftId[$sid];
-            $shiftWeekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+            $shiftWeekdays = $shift['weekdays'] ?? [];
             if (in_array($weekdayZeroBased, $shiftWeekdays, true)) {
                 $out[] = $entry;
             }
@@ -1250,7 +1250,7 @@ class PlanService
                 $requiredCount = (int)$rule['required_count'];
 
                 // Regel gilt nur an den in der Schicht definierten Wochentagen
-                $shiftWeekdays = $rule['shift_weekdays'] ?? [isset($rule['weekday']) ? (int)$rule['weekday'] : 0];
+                $shiftWeekdays = $rule['shift_weekdays'] ?? [];
                 if (!in_array($weekdayZeroBased, $shiftWeekdays, true)) {
                     continue;
                 }

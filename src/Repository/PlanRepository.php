@@ -109,7 +109,7 @@ class PlanRepository
 
     public function getEntriesWithDetails(int $planId): array
     {
-        $sql = 'SELECT pe.*, s.name AS shift_name, s.weekday, s.time_from, s.time_to,
+        $sql = 'SELECT pe.*, s.name AS shift_name, s.time_from, s.time_to,
                        e.name AS employee_name,
                        r.name AS role_name, r.shortcode
                 FROM plan_entry pe

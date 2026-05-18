@@ -88,7 +88,7 @@ $roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['rol
         <?php foreach ($shifts as $shift): ?>
             <?php
             // Alle Wochentage für die Schicht als Kürzel ausgeben
-            $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+            $weekdays = $shift['weekdays'] ?? [];
             $weekdayLabels = [];
             foreach ((array)$weekdays as $day) {
                 $day = (int)$day;
@@ -132,7 +132,7 @@ $roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['rol
             <?php foreach ($shifts as $shift): ?>
                 <?php if (!in_array((int)$shift['id'], $allowedShifts, true)) continue; ?>
                 <?php
-                $weekdays = $shift['weekdays'] ?? [isset($shift['weekday']) ? (int)$shift['weekday'] : 0];
+                $weekdays = $shift['weekdays'] ?? [];
                 $weekdays = array_map('intval', (array)$weekdays);
                 if (!in_array($wdValue, $weekdays, true)) continue;
                 $weekdayLabels = [];

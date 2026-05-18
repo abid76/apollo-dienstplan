@@ -7,7 +7,6 @@ SET time_zone = '+00:00';
 CREATE TABLE IF NOT EXISTS shift (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   name VARCHAR(100) NOT NULL,
-  weekday TINYINT UNSIGNED NOT NULL COMMENT '0=Montag ... 6=Sonntag',
   time_from TIME NOT NULL,
   time_to TIME NOT NULL,
   PRIMARY KEY (id)

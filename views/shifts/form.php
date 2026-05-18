@@ -16,13 +16,7 @@ $weekdayNames = [
 $id = $shift['id'] ?? null;
 $name = $shift['name'] ?? '';
 
-// Ausgewählte Wochentage ermitteln (Mehrfachauswahl möglich)
-$weekdays = $shift['weekdays'] ?? null;
-if ($weekdays === null && isset($shift['weekday'])) {
-    // Fallback für bestehende Daten, die nur einen Wochentag enthalten
-    $weekdays = [(int)$shift['weekday']];
-}
-$weekdays = array_map('intval', (array)$weekdays);
+$weekdays = array_map('intval', (array)($shift['weekdays'] ?? []));
 
 $timeFromRaw = $shift['time_from'] ?? '';
 $timeToRaw = $shift['time_to'] ?? '';
