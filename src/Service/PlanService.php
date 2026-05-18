@@ -202,8 +202,6 @@ class PlanService
             }
         }
 
-        return $planId;
-
         // Nun stellen wir sicher, dass Montags so viele Mitarbeiter wie möglich besetzt sind
         for ($weekIndex = 0; $weekIndex < $weeks; $weekIndex++) {
             $dayIndex = $weekIndex * 7;
