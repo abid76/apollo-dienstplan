@@ -77,7 +77,7 @@ class PlanService
 
             $remainingEmployeeShifts = [];
             foreach ($employees as $employee) {
-                $remainingEmployeeShifts[(int)$employee['id']] = (int)$employee['max_shifts_per_week'];
+                $remainingEmployeeShifts[(int)$employee['id']] = (int)$employee['shifts_per_week'];
             }
             for ($weekday = 0; $weekday < 7; $weekday++) {
                 $dayIndex = $weekIndex * 7 + $weekday;
@@ -274,7 +274,7 @@ class PlanService
             $remainingEmployeeShifts = [];
             foreach ($employees as $employee) {
                 $remainingEmployeeShifts[(int)$employee['id']] =
-                    (int)$employee['max_shifts_per_week'] - ($assignmentsPerWeek[$employee['id']][$weekIndex] ?? 0);
+                    (int)$employee['shifts_per_week'] - ($assignmentsPerWeek[$employee['id']][$weekIndex] ?? 0);
             }
             // Hier gilt folgende Logik
             // Wir iterieren über alle Wochentage und Schichten und fügen nach und nach jeweils ein Mitarbeiter hinzu
@@ -389,7 +389,7 @@ class PlanService
             foreach ($employees as $employee) {
 
                 $employeeId = (int)$employee['id'];
-                $remainingEmployeeShifts = (int)$employee['max_shifts_per_week'] - ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0);
+                $remainingEmployeeShifts = (int)$employee['shifts_per_week'] - ($assignmentsPerWeek[$employeeId][$weekIndex] ?? 0);
                 if ($remainingEmployeeShifts <= 0) {
                     continue;
                 }
@@ -1098,7 +1098,7 @@ class PlanService
                 foreach ($shiftAssignments as $roleAssignments) {
                     if (in_array($employeeId, $roleAssignments, true)) {
                         $currentWeekCount++;
-                        if ($currentWeekCount >= (int)$employee['max_shifts_per_week']) {
+                        if ($currentWeekCount >= (int)$employee['shifts_per_week']) {
                             return false;
                         }
                     }
@@ -1313,7 +1313,7 @@ class PlanService
 
             foreach ($employees as $employee) {
                 $employeeId = (int)$employee['id'];
-                $maxPerWeek = (int)($employee['max_shifts_per_week'] ?? 0);
+                $maxPerWeek = (int)($employee['shifts_per_week'] ?? 0);
                 $actual = $employeeWeeklyShiftCounts[$employeeId][$weekIndex] ?? 0;
                 if ($actual < $maxPerWeek) {
                     $employeeUnderloadWarnings[] = [
@@ -1428,7 +1428,7 @@ class PlanService
 
             // Die maximale Anzahl an Schichten pro Woche ist nun die erneute Anzahl der Wochentage
             // darf jedoch die ursprüngliche maximale Anzahl an Schichten pro Woche nicht überschreiten.
-            $employee['max_shifts_per_week'] = min((int)$employee['max_shifts_per_week'], count($employee['allowed_weekdays']));
+            $employee['shifts_per_week'] = min((int)$employee['shifts_per_week'], count($employee['allowed_weekdays']));
         }
         unset($employee);
 

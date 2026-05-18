@@ -89,28 +89,28 @@ class EmployeeRepository
         return (bool)$stmt->fetchColumn();
     }
 
-    public function create(string $name, int $maxShiftsPerWeek): int
+    public function create(string $name, int $shiftsPerWeek): int
     {
         $stmt = $this->db->prepare(
-            'INSERT INTO employee (name, max_shifts_per_week) VALUES (:name, :max)'
+            'INSERT INTO employee (name, shifts_per_week) VALUES (:name, :max)'
         );
         $stmt->execute([
             'name' => $name,
-            'max' => $maxShiftsPerWeek,
+            'max' => $shiftsPerWeek,
         ]);
 
         return (int)$this->db->lastInsertId();
     }
 
-    public function update(int $id, string $name, int $maxShiftsPerWeek): void
+    public function update(int $id, string $name, int $shiftsPerWeek): void
     {
         $stmt = $this->db->prepare(
-            'UPDATE employee SET name = :name, max_shifts_per_week = :max WHERE id = :id'
+            'UPDATE employee SET name = :name, shifts_per_week = :max WHERE id = :id'
         );
         $stmt->execute([
             'id' => $id,
             'name' => $name,
-            'max' => $maxShiftsPerWeek,
+            'max' => $shiftsPerWeek,
         ]);
     }
 

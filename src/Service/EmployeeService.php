@@ -62,7 +62,7 @@ class EmployeeService
 
         $employeeId = $this->employees->create(
             trim($data['name']),
-            (int)$data['max_shifts_per_week']
+            (int)$data['shifts_per_week']
         );
 
         $this->updateRelations($employeeId, $data);
@@ -80,7 +80,7 @@ class EmployeeService
         $this->employees->update(
             $id,
             trim($data['name']),
-            (int)$data['max_shifts_per_week']
+            (int)$data['shifts_per_week']
         );
 
         $this->updateRelations($id, $data);
@@ -134,9 +134,9 @@ class EmployeeService
         } elseif ($this->employees->nameExists($name, $currentId)) {
             $errors[] = 'Ein Mitarbeiter mit diesem Namen existiert bereits.';
         }
-        if (!isset($data['max_shifts_per_week']) || $data['max_shifts_per_week'] === '') {
+        if (!isset($data['shifts_per_week']) || $data['shifts_per_week'] === '') {
             $errors[] = 'Anzahl Schichten pro Woche ist erforderlich.';
-        } elseif (!is_numeric($data['max_shifts_per_week']) || (int)$data['max_shifts_per_week'] < 0) {
+        } elseif (!is_numeric($data['shifts_per_week']) || (int)$data['shifts_per_week'] < 0) {
             $errors[] = 'Anzahl Schichten pro Woche muss eine nichtnegative Zahl sein.';
         }
 

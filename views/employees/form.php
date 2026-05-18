@@ -28,7 +28,7 @@ $weekdayShortNames = [
 
 $id = $employee['id'] ?? null;
 $name = $employee['name'] ?? '';
-$maxShiftsPerWeek = $employee['max_shifts_per_week'] ?? 5;
+$shiftsPerWeek = $employee['shifts_per_week'] ?? 5;
 $allowedWeekdays = isset($employee['allowed_weekdays']) ? array_map('intval', (array)$employee['allowed_weekdays']) : [];
 $allowedShifts = [];
 $allowedShiftMaxPerWeek = [];
@@ -69,8 +69,8 @@ $roleIds = isset($employee['roles']) ? array_map('intval', (array)$employee['rol
         <input type="text" id="name" name="name" value="<?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?>">
     </div>
     <div>
-        <label for="max_shifts_per_week">Anz. Schichten/Woche</label><br>
-        <input type="number" min="0" id="max_shifts_per_week" name="max_shifts_per_week" value="<?php echo htmlspecialchars((string)$maxShiftsPerWeek, ENT_QUOTES, 'UTF-8'); ?>">
+        <label for="shifts_per_week">Anz. Schichten/Woche</label><br>
+        <input type="number" min="0" id="shifts_per_week" name="shifts_per_week" value="<?php echo htmlspecialchars((string)$shiftsPerWeek, ENT_QUOTES, 'UTF-8'); ?>">
     </div>
 
     <fieldset>
