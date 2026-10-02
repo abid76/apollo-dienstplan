@@ -1,2 +1,5 @@
 vendor/
 composer.lock
+deploy.sh
+.env
+var/
