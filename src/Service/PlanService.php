@@ -113,7 +113,8 @@ class PlanService
                                 $shiftId,
                                 $roleId,
                                 $dateString,
-                                $currentPlan
+                                $currentPlan,
+                                $shifts
                             )) {
                                 continue;
                             }
@@ -242,7 +243,8 @@ class PlanService
                             $shiftId,
                             $roleId,
                             $dateString,
-                            $currentPlan
+                            $currentPlan,
+                            $shifts
                         )) {
                             continue;
                         }
@@ -318,7 +320,8 @@ class PlanService
                                     $shiftId,
                                     $roleId,
                                     $dateString,
-                                    $currentPlan
+                                    $currentPlan,
+                                    $shifts
                                 )) {
                                     continue;
                                 }
@@ -397,7 +400,7 @@ class PlanService
                 error_log('Employee: ' . $employeeId . '/' . $employee['name'] . ' has remaining shifts: ' . $remainingEmployeeShifts);
 
                 // Ermittle alle Wochentage und Schichten, die der Mitarbeiter machen darf
-                $employeeAllowedWeekdayShifts = $this->findAllowedWeekdayShifts($employee);
+                $employeeAllowedWeekdayShifts = $this->findAllowedWeekdayShifts($employee, $shifts);
 
                 foreach ($employeeAllowedWeekdayShifts as $allowedWeekday => $allowedShiftIds) {
 
@@ -410,7 +413,7 @@ class PlanService
 
                         foreach ($employee['roles'] as $roleId) {
 
-                            if (!$this->isEmployeeAllowedForDayShiftAndRole($employee, $allowedShiftId, $roleId, $dateString, $currentPlan)) {
+                            if (!$this->isEmployeeAllowedForDayShiftAndRole($employee, $allowedShiftId, $roleId, $dateString, $currentPlan, $shifts)) {
                                 continue;
                             }
 
@@ -432,7 +435,7 @@ class PlanService
                                 }
 
                                 // Suchen nach einer verfügbaren Schicht für den Kollegen
-                                $availableShifts = $this->findAvailableReplacementShiftsForEmployee($assignedEmployee, $weekIndex, $dateString, $allowedShiftId, $currentPlan);
+                                $availableShifts = $this->findAvailableReplacementShiftsForEmployee($assignedEmployee, $weekIndex, $dateString, $allowedShiftId, $currentPlan, $shifts);
                                 if (empty($availableShifts)) {
                                     error_log('No available shifts found for employee: ' . $assignedEmployeeId);
                                     continue;
@@ -866,6 +869,22 @@ class PlanService
     }
 
     /**
+     * Ob die Schicht am Wochentag (0 = Montag … 6 = Sonntag) stattfindet.
+     *
+     * @param array<int, array<string, mixed>> $allShifts
+     */
+    private function isShiftScheduledOnWeekday(int $shiftId, int $weekdayZeroBased, array $allShifts): bool
+    {
+        foreach ($allShifts as $shift) {
+            if ((int)$shift['id'] !== $shiftId) {
+                continue;
+            }
+            return in_array($weekdayZeroBased, $shift['weekdays'] ?? [], true);
+        }
+        return false;
+    }
+
+    /**
      * Nur Einträge aus employee_allowed_shift, deren Schicht an $weekdayZeroBased (0 = Montag) vorkommt.
      *
      * @param array<int, array{shift_id: int, max_per_week?: ?int}> $allowedShifts
@@ -899,10 +918,12 @@ class PlanService
      * Ermittelt die erlaubten Schichten pro Wochentag für einen Mitarbeiter.
      * Falls `allowed_weekday_shifts` für einen Tag gesetzt ist, gilt diese Einschränkung.
      * Andernfalls gelten alle `allowed_shifts` für diesen Wochentag.
+     * Schichten, die an dem Wochentag nicht stattfinden, werden ausgeschlossen.
      *
+     * @param array<int, array<string, mixed>> $allShifts
      * @return array<int, array<int>>
      */
-    private function findAllowedWeekdayShifts(array $employee): array
+    private function findAllowedWeekdayShifts(array $employee, array $allShifts): array
     {
         $allowedWeekdays = array_values(array_map('intval', (array)($employee['allowed_weekdays'] ?? [])));
 
@@ -917,7 +938,10 @@ class PlanService
             $daySpecific = $employee['allowed_weekday_shifts'][$weekday] ?? null;
             $shiftIds = $daySpecific !== null ? (array)$daySpecific : $defaultShiftIds;
             $shiftIds = array_values(array_map('intval', $shiftIds));
-            $shiftIds = array_values(array_filter($shiftIds, static fn($sid) => $sid > 0));
+            $shiftIds = array_values(array_filter(
+                $shiftIds,
+                fn($sid) => $sid > 0 && $this->isShiftScheduledOnWeekday($sid, $weekday, $allShifts)
+            ));
             $result[$weekday] = $shiftIds;
         }
 
@@ -929,9 +953,10 @@ class PlanService
      * laut seinen Einschränkungen grundsätzlich eingesetzt werden könnte und im aktuellen Plan an diesem
      * Tag noch nicht eingeteilt ist.
      *
+     * @param array<int, array<string, mixed>> $allShifts
      * @return array<int, array{date: string, shift_id: int, role_id: int}>
      */
-    private function findAvailableReplacementShiftsForEmployee(array $employee, int $weekIndex, string $replacementDateString, int $replacementShiftId, array $currentPlan): array
+    private function findAvailableReplacementShiftsForEmployee(array $employee, int $weekIndex, string $replacementDateString, int $replacementShiftId, array $currentPlan, array $allShifts): array
     {
         $employeeId = (int)($employee['id'] ?? 0);
         if ($employeeId <= 0) {
@@ -980,9 +1005,13 @@ class PlanService
                 continue;
             }
 
+            $actualWeekday = (int)(new \DateTimeImmutable($dateString))->format('N') - 1;
             $allowedShiftIds = $employee['allowed_weekday_shifts'][$weekday] ?? $allowedShiftIdsDefault;
             $allowedShiftIds = array_values(array_map('intval', (array)$allowedShiftIds));
-            $allowedShiftIds = array_values(array_filter($allowedShiftIds, static fn($sid) => $sid > 0));
+            $allowedShiftIds = array_values(array_filter(
+                $allowedShiftIds,
+                fn($sid) => $sid > 0 && $this->isShiftScheduledOnWeekday($sid, $actualWeekday, $allShifts)
+            ));
 
             foreach ($allowedShiftIds as $shiftId) {
 
@@ -1039,13 +1068,15 @@ class PlanService
         int $shiftId,
         int $roleId,
         string $dateString,
-        array $currentPlan
+        array $currentPlan,
+        array $allShifts
     ): bool {
         $employeeId = (int)$employee['id'];
         $actualWeekday = (int)(new \DateTimeImmutable($dateString))->format('N') - 1;
         if (
             !in_array($actualWeekday, $employee['allowed_weekdays'], true) ||
-            !in_array($roleId, $employee['roles'], true)
+            !in_array($roleId, $employee['roles'], true) ||
+            !$this->isShiftScheduledOnWeekday($shiftId, $actualWeekday, $allShifts)
         ) {
             return false;
         }
