@@ -458,7 +458,7 @@ class PlanService
                                 }
 
                                 // Kollege auf die neue Schicht setzen
-                                $currentPlan[$dateString][$allowedShiftId][$roleId][] = $employeeId;
+                                $currentPlan[$availableDateString][$availableShiftId][$availableRoleId][] = $assignedEmployeeId;
                                 error_log('Adding entry: ' . $availableDateString . ' ' . $availableShiftId . ' ' . $assignedEmployeeId . ' ' . $availableRoleId);
                                 $this->plans->addEntry(
                                     $planId,
@@ -468,8 +468,8 @@ class PlanService
                                     $availableRoleId
                                 );
 
-                                // Mitarbeiter mit unbesetzten Schichten auf die neue Schicht setzen
-                                $currentPlan[$availableDateString][$availableShiftId][$availableRoleId][] = $employeeId;
+                                // Mitarbeiter mit unbesetzten Schichten auf die Ursprungsschicht setzen
+                                $currentPlan[$dateString][$allowedShiftId][$roleId][] = $employeeId;
                                 error_log('Adding entry: ' . $dateString . ' ' . $allowedShiftId . ' ' . $employeeId . ' ' . $roleId);
                                 $this->plans->addEntry(
                                     $planId,
